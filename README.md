@@ -1,1 +1,1 @@
-# neuroscale-platform
+# NeuroScale Platform
