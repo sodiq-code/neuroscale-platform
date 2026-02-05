@@ -1,0 +1,13 @@
+# Defines a KServe InferenceService named "sklearn-iris" in the default namespace,
+# configuring a predictor to serve a scikit-learn model from the specified Google Storage URI using the sklearn model format.
+apiVersion: serving.kserve.io/v1beta1    # KServe InferenceService API version
+kind: InferenceService                   # Resource type
+metadata:
+  name: sklearn-iris                     # Name of the InferenceService
+  namespace: default                     # Namespace where the service is deployed
+spec:
+  predictor:
+    model:
+      modelFormat:
+        name: sklearn                    # Model format is scikit-learn
+      storageUri: "gs://kfserving-examples/models/sklearn/1.0/model"  # Location of the model artifact
