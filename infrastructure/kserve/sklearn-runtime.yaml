@@ -1,0 +1,21 @@
+apiVersion: serving.kserve.io/v1alpha1
+kind: ClusterServingRuntime
+metadata:
+  name: kserve-sklearn-server
+spec:
+  supportedModelFormats:
+    - name: "sklearn"
+      version: "1"
+      autoSelect: true
+  containers:
+    - name: kserve-container
+      image: kserve/sklearnserver:v0.12.1
+      # WE ADDED THIS SECTION TO FIX THE CRASH
+      args:
+        - --model_name={{.Name}}
+        - --model_dir=/mnt/models
+        - --http_port=8080
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
