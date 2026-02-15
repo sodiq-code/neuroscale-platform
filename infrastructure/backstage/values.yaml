@@ -20,18 +20,18 @@ backstage:
       baseUrl: http://localhost:7007
       listen:
         port: 7007
+        # THE FIX: Open the door so Kubernetes can check its pulse
+        host: "0.0.0.0"
       cors:
         origin: http://localhost:7007
 
-  # WE ADDED THIS SECTION TO FIX THE SILENT CRASH
-  resources:
-    requests:
-      cpu: 100m
-      memory: 512Mi
-    # We are EXPLICITLY removing the limits so it doesn't get OOMKilled
-    limits: {}
-
+  # We moved these under 'backend' so the Helm chart reads them correctly
   backend:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits: {}
     startupProbe:
       initialDelaySeconds: 60
       failureThreshold: 30
