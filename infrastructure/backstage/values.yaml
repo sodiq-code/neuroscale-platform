@@ -1,0 +1,13 @@
+backstage:
+  # Enable the PostgreSQL database (Backstage needs a brain)
+  postgresql:
+    enabled: true
+  
+  # Configure the URL
+  appConfig:
+    app:
+      baseUrl: http://localhost:7007
+    backend:
+      baseUrl: http://localhost:7007
+      cors:
+        origin: http://localhost:7007
