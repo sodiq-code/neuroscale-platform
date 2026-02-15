@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: neuroscale-backstage
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/sodiq-code/neuroscale-platform.git
+    targetRevision: main
+    # This tells the child app to read the Helm blueprint we made earlier
+    path: infrastructure/backstage
+  destination:
+    server: https://kubernetes.default.svc
+    # We are putting Backstage in its own clean neighborhood
+    namespace: backstage
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      # This tells ArgoCD to automatically create the "backstage" namespace
+      - CreateNamespace=true
