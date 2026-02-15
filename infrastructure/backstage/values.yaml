@@ -1,5 +1,4 @@
 backstage:
-  # Give the Database more time and memory
   postgresql:
     enabled: true
     primary:
@@ -8,7 +7,7 @@ backstage:
           memory: 256Mi
           cpu: 100m
       livenessProbe:
-        initialDelaySeconds: 120  # Wait 2 minutes before checking
+        initialDelaySeconds: 120
         timeoutSeconds: 10
       readinessProbe:
         initialDelaySeconds: 30
@@ -24,10 +23,17 @@ backstage:
       cors:
         origin: http://localhost:7007
 
-  # Give the Backstage App more time to start
+  # WE ADDED THIS SECTION TO FIX THE SILENT CRASH
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    # We are EXPLICITLY removing the limits so it doesn't get OOMKilled
+    limits: {}
+
   backend:
     startupProbe:
-      initialDelaySeconds: 60 # Wait 1 minute before checking
+      initialDelaySeconds: 60
       failureThreshold: 30
       periodSeconds: 10
     livenessProbe:
