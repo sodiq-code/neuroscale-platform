@@ -1,13 +1,36 @@
 backstage:
-  # Enable the PostgreSQL database (Backstage needs a brain)
+  # Give the Database more time and memory
   postgresql:
     enabled: true
-  
-  # Configure the URL
+    primary:
+      resources:
+        requests:
+          memory: 256Mi
+          cpu: 100m
+      livenessProbe:
+        initialDelaySeconds: 120  # Wait 2 minutes before checking
+        timeoutSeconds: 10
+      readinessProbe:
+        initialDelaySeconds: 30
+        timeoutSeconds: 10
+
   appConfig:
     app:
       baseUrl: http://localhost:7007
     backend:
       baseUrl: http://localhost:7007
+      listen:
+        port: 7007
       cors:
         origin: http://localhost:7007
+
+  # Give the Backstage App more time to start
+  backend:
+    startupProbe:
+      initialDelaySeconds: 60 # Wait 1 minute before checking
+      failureThreshold: 30
+      periodSeconds: 10
+    livenessProbe:
+      initialDelaySeconds: 60
+    readinessProbe:
+      initialDelaySeconds: 60
