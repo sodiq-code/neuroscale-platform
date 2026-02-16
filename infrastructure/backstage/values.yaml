@@ -1,18 +1,6 @@
 backstage:
   postgresql:
     enabled: true
-    primary:
-      resources:
-        requests:
-          memory: 256Mi
-          cpu: 100m
-      # Postgres probes are fine, we leave them extended
-      livenessProbe:
-        initialDelaySeconds: 120
-        timeoutSeconds: 10
-      readinessProbe:
-        initialDelaySeconds: 30
-        timeoutSeconds: 10
 
   appConfig:
     app:
@@ -21,18 +9,20 @@ backstage:
       baseUrl: http://localhost:7007
       listen:
         port: 7007
+        # Bind to all interfaces so the probe can reach it
         host: "0.0.0.0"
-      cors:
-        origin: http://localhost:7007
 
-  # --- THE FIX: DISARMING THE ASSASSINS ---
-  # We are forcing Kubernetes to always see the pod as Healthy
-  startupProbe:
-    exec:
-      command: ["true"]
-  livenessProbe:
-    exec:
-      command: ["true"]
-  readinessProbe:
-    exec:
-      command: ["true"]
+  backend:
+    # These are placed EXACTLY where the Helm schema requires them
+    livenessProbe:
+      # Wait a massive 5 minutes before checking if it's alive
+      initialDelaySeconds: 300 
+      timeoutSeconds: 10
+      periodSeconds: 10
+      failureThreshold: 10
+    readinessProbe:
+      # Wait 2 minutes before routing traffic to it
+      initialDelaySeconds: 120
+      timeoutSeconds: 10
+      periodSeconds: 10
+      failureThreshold: 10
