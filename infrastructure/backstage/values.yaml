@@ -9,19 +9,23 @@ backstage:
       baseUrl: http://localhost:7007
       listen:
         port: 7007
-        # Bind to all interfaces so the probe can reach it
         host: "0.0.0.0"
 
   backend:
-    # These are placed EXACTLY where the Helm schema requires them
+    # 1. THE MEMORY FIX: Remove the 512MB limits so it can use Docker's RAM
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits: {}
+
+    # 2. THE TIMEOUT FIX: Give it 5 minutes to boot up
     livenessProbe:
-      # Wait a massive 5 minutes before checking if it's alive
-      initialDelaySeconds: 300 
+      initialDelaySeconds: 300
       timeoutSeconds: 10
       periodSeconds: 10
       failureThreshold: 10
     readinessProbe:
-      # Wait 2 minutes before routing traffic to it
       initialDelaySeconds: 120
       timeoutSeconds: 10
       periodSeconds: 10
