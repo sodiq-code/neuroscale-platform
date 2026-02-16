@@ -3,6 +3,14 @@ backstage:
     enabled: true
 
   backstage:
+    replicas: 1
+    revisionHistoryLimit: 2
+
+    image:
+      repository: backstage/backstage
+      digest: "sha256:d20016b0455c3d359461be69d85c8b672f0f7ad19d41b773bf4a315ec911ca3c"
+      pullPolicy: IfNotPresent
+
     appConfig:
       app:
         baseUrl: http://localhost:7007
