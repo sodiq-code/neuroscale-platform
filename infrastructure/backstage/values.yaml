@@ -2,26 +2,33 @@ backstage:
   postgresql:
     enabled: true
 
-  appConfig:
-    app:
-      baseUrl: http://localhost:7007
-    backend:
-      baseUrl: http://localhost:7007
-      listen:
-        port: 7007
-        # Bind to all interfaces so the probe can reach it
-        host: "0.0.0.0"
+  backstage:
+    appConfig:
+      app:
+        baseUrl: http://localhost:7007
+      backend:
+        baseUrl: http://localhost:7007
+        listen:
+          port: 7007
+          host: "0.0.0.0"
 
-  backend:
-    # These are placed EXACTLY where the Helm schema requires them
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits: {}
+
+    startupProbe:
+      initialDelaySeconds: 120
+      timeoutSeconds: 10
+      periodSeconds: 10
+      failureThreshold: 30
     livenessProbe:
-      # Wait a massive 5 minutes before checking if it's alive
-      initialDelaySeconds: 300 
+      initialDelaySeconds: 300
       timeoutSeconds: 10
       periodSeconds: 10
       failureThreshold: 10
     readinessProbe:
-      # Wait 2 minutes before routing traffic to it
       initialDelaySeconds: 120
       timeoutSeconds: 10
       periodSeconds: 10
