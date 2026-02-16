@@ -9,30 +9,20 @@ backstage:
       baseUrl: http://localhost:7007
       listen:
         port: 7007
+        # Bind to all interfaces so the probe can reach it
         host: "0.0.0.0"
 
-  # --- FIX 1: Shifted OUTSIDE of appConfig/backend ---
-  resources:
-    requests:
-      cpu: 100m
-      memory: 512Mi
-    limits: {}
-
-  # --- FIX 2: Explicitly overriding the 60-Second Assassin ---
-  startupProbe:
-    initialDelaySeconds: 120
-    timeoutSeconds: 10
-    failureThreshold: 30
-    periodSeconds: 10
-
-  livenessProbe:
-    initialDelaySeconds: 120
-    timeoutSeconds: 10
-    failureThreshold: 30
-    periodSeconds: 10
-
-  readinessProbe:
-    initialDelaySeconds: 60
-    timeoutSeconds: 10
-    failureThreshold: 30
-    periodSeconds: 10
+  backend:
+    # These are placed EXACTLY where the Helm schema requires them
+    livenessProbe:
+      # Wait a massive 5 minutes before checking if it's alive
+      initialDelaySeconds: 300 
+      timeoutSeconds: 10
+      periodSeconds: 10
+      failureThreshold: 10
+    readinessProbe:
+      # Wait 2 minutes before routing traffic to it
+      initialDelaySeconds: 120
+      timeoutSeconds: 10
+      periodSeconds: 10
+      failureThreshold: 10
