@@ -11,22 +11,28 @@ backstage:
         port: 7007
         host: "0.0.0.0"
 
-  backend:
-    # 1. THE MEMORY FIX: Remove the 512MB limits so it can use Docker's RAM
-    resources:
-      requests:
-        cpu: 100m
-        memory: 512Mi
-      limits: {}
+  # --- FIX 1: Shifted OUTSIDE of appConfig/backend ---
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits: {}
 
-    # 2. THE TIMEOUT FIX: Give it 5 minutes to boot up
-    livenessProbe:
-      initialDelaySeconds: 300
-      timeoutSeconds: 10
-      periodSeconds: 10
-      failureThreshold: 10
-    readinessProbe:
-      initialDelaySeconds: 120
-      timeoutSeconds: 10
-      periodSeconds: 10
-      failureThreshold: 10
+  # --- FIX 2: Explicitly overriding the 60-Second Assassin ---
+  startupProbe:
+    initialDelaySeconds: 120
+    timeoutSeconds: 10
+    failureThreshold: 30
+    periodSeconds: 10
+
+  livenessProbe:
+    initialDelaySeconds: 120
+    timeoutSeconds: 10
+    failureThreshold: 30
+    periodSeconds: 10
+
+  readinessProbe:
+    initialDelaySeconds: 60
+    timeoutSeconds: 10
+    failureThreshold: 30
+    periodSeconds: 10
