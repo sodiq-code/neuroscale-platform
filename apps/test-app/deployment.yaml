@@ -5,19 +5,24 @@ metadata:
   name: nginx-test
   namespace: default
 spec:
+  # Single replica for test environment
   replicas: 1
+  # Select pods with app: nginx label
   selector:
     matchLabels:
       app: nginx
+  # Pod template specification
   template:
     metadata:
       labels:
         app: nginx
     spec:
       containers:
+      # NGINX container configuration
       - name: nginx
-        image: nginx:latest
+        image: nginx:1.27.3
         ports:
+        # Listen on port 80
         - containerPort: 80
 ---
 # ClusterIP service exposing the NGINX pod on port 80
@@ -27,10 +32,13 @@ metadata:
   name: nginx-service
   namespace: default
 spec:
+  # Route to pods with app: nginx label
   selector:
     app: nginx
+  # Service port configuration
   ports:
     - protocol: TCP
       port: 80
       targetPort: 80
+  # Internal cluster communication only
   type: ClusterIP
