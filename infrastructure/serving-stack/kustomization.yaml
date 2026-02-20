@@ -14,3 +14,5 @@ resources:
 
 patches:
   - path: patches/inferenceservice-config-ingress.yaml
+  - path: patches/kserve-crd-cabundle-fix.yaml
+
