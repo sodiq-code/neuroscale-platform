@@ -10,7 +10,7 @@ Click template (Backstage) → PR created → merge → ArgoCD sync → KServe I
 
 ## 3) Current status
 - Milestone A — GitOps spine (drift control proven): ✅ DONE
-- Milestone B — AI serving baseline (GitOps-managed KServe install + one endpoint verified): 🟡 NEXT
+- Milestone B — AI serving baseline (GitOps-managed KServe install + one endpoint verified): ✅ DONE
 - Milestone C — Golden Path (Backstage creates PR → merge → Argo deploy): ⏳ PLANNED
 - Milestone D — Guardrails (CI + admission policies block unsafe changes): ⏳ PLANNED
 
@@ -36,9 +36,14 @@ Click template (Backstage) → PR created → merge → ArgoCD sync → KServe I
 - ArgoCD Applications list showing `neuroscale-infrastructure` + `test-app` as Synced/Healthy.
 - Terminal showing GitOps self-heal: delete `nginx-test` then it reappears.
 
-### Milestone B evidence (target)
+### Milestone B evidence
 - `InferenceService` Ready + a successful inference request.
 - ArgoCD showing the KServe install layer is GitOps-managed.
+
+### Week 2 completion snapshot
+- Root app-of-apps now points to `infrastructure/apps`.
+- Child apps present for serving stack, runtimes, and example model app.
+- ArgoCD applications are Synced/Healthy across the stack.
 
 ## 7) Known landmines + pivots
 - Laptop RAM wall (Istio/Knative/KServe + Backstage): use raw deployment first; temporarily scale down Backstage during Week 2 verification.

@@ -11,9 +11,10 @@ Key docs to read first:
 
 Current progress:
 - Milestone A (GitOps drift self-heal) is done.
-- Next task: Milestone B (make KServe install GitOps-managed in this repo; verify one working inference endpoint).
+- Milestone B (GitOps-managed serving stack + working endpoint) is done.
+- Next task: Milestone C (Backstage Golden Path template that creates PRs for new model apps).
 
 Constraints:
 - Demo-first; minimize complexity; port-forward first; KServe simplest mode first; Kyverno first; CI must validate rendered Helm manifests.
 
-Please propose the next 3–5 concrete repo changes (files to add/modify) to complete Milestone B and how to verify success.
+Please propose the next 3–5 concrete repo changes (files to add/modify) to complete Milestone C and how to verify success.
