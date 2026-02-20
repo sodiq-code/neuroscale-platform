@@ -6,7 +6,6 @@ resources:
   - https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
 
   # Knative Serving + Kourier networking layer
-  - https://github.com/knative/serving/releases/download/knative-v1.14.0/serving-crds.yaml
   - https://github.com/knative/serving/releases/download/knative-v1.14.0/serving-core.yaml
   - https://github.com/knative-extensions/net-kourier/releases/download/knative-v1.14.0/kourier.yaml
 
