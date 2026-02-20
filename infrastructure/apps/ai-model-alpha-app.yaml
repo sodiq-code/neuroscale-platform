@@ -1,14 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: neuroscale-infrastructure
+  name: ai-model-alpha
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/sodiq-code/neuroscale-platform.git
     targetRevision: main
-    path: infrastructure/apps
+    path: apps/ai-model-alpha
   destination:
     server: https://kubernetes.default.svc
     namespace: default

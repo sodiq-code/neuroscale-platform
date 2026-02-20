@@ -1,18 +1,20 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: neuroscale-infrastructure
+  name: neuroscale-kserve-runtimes
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/sodiq-code/neuroscale-platform.git
     targetRevision: main
-    path: infrastructure/apps
+    path: infrastructure/kserve
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: kserve
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

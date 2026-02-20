@@ -18,8 +18,11 @@ NeuroScale is a self-service AI inference platform on Kubernetes: developers shi
 
 - GitOps bootstrap entrypoint: `bootstrap/root-app.yaml`
 - Platform components (GitOps-managed): `infrastructure/`
-	- Backstage Argo app: `infrastructure/backstage-app.yaml`
-	- Test app Argo app: `infrastructure/test-app-app.yaml`
+	- Backstage Argo app: `infrastructure/apps/backstage-app.yaml`
+	- Test app Argo app: `infrastructure/apps/test-app-app.yaml`
+	- Serving stack Argo app: `infrastructure/apps/serving-stack-app.yaml`
+	- KServe runtimes Argo app: `infrastructure/apps/kserve-runtimes-app.yaml`
+	- Example inference app Argo app: `infrastructure/apps/ai-model-alpha-app.yaml`
 	- Backstage Helm wrapper: `infrastructure/backstage/`
 	- KServe runtime (example): `infrastructure/kserve/sklearn-runtime.yaml`
 - Workloads/apps deployed via GitOps: `apps/`
@@ -65,7 +68,34 @@ kubectl rollout status deploy/nginx-test -n default --timeout=120s
 
 - Screenshot: ArgoCD Applications list (showing `neuroscale-infrastructure` + `test-app` as Synced/Healthy)
 - Screenshot: terminal output showing delete → recreated (self-heal)
-- Link to the GitOps app definition: `infrastructure/test-app-app.yaml`
+- Link to the GitOps app definition: `infrastructure/apps/test-app-app.yaml`
+
+## Demo: Milestone B (one inference request succeeds)
+
+This demo proves the AI-serving data plane works end-to-end: **KServe + Knative Serving + Kourier**.
+
+### What you should observe
+
+1. The `sklearn-iris` `InferenceService` is **Ready=True**.
+2. A prediction request returns a JSON response (e.g. `{"predictions":[...]}`).
+
+### Commands
+
+```bash
+# Confirm the InferenceService is Ready
+kubectl -n default get inferenceservice sklearn-iris
+
+# Port-forward the Kourier gateway (use a high local port to avoid conflicts)
+kubectl -n kourier-system port-forward svc/kourier 18080:80
+
+# In a second terminal: send a request through Kourier.
+# NOTE: Knative routes by Host header; this must match the Knative Service URL host.
+curl -sS \
+	-H 'Host: sklearn-iris-predictor.default.127.0.0.1.sslip.io' \
+	-H 'Content-Type: application/json' \
+	-d '{"instances":[[5.1,3.5,1.4,0.2],[6.2,3.4,5.4,2.3]]}' \
+	http://127.0.0.1:18080/v1/models/sklearn-iris:predict
+```
 
 ## Notes
 

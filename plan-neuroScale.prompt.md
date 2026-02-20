@@ -54,7 +54,7 @@ Build a **B2B SaaS-grade Internal Developer Platform** that lets a developer dep
 2. Phase 1 — GitOps foundation (make the repo the source of truth)
    1. Confirm and document the GitOps topology you already have:
       - Root app-of-apps entry point in [bootstrap/root-app.yaml](bootstrap/root-app.yaml) (sync automated, prune, selfHeal)
-      - Backstage child app in [infrastructure/backstage-app.yaml](infrastructure/backstage-app.yaml)
+      - Backstage child app in [infrastructure/apps/backstage-app.yaml](infrastructure/apps/backstage-app.yaml)
    2. Make the infrastructure directory “GitOps-ready” as it grows:
       - Establish a consistent pattern: every platform component has its own folder under infrastructure/ and (optionally) its own ArgoCD Application.
       - Keep cluster-scoped resources (CRDs, ClusterRoles, ClusterPolicies) explicit and separated to avoid accidental deletions (especially with `prune: true`).
@@ -84,7 +84,7 @@ Build a **B2B SaaS-grade Internal Developer Platform** that lets a developer dep
 
 4. Phase 3 — Backstage as the “product layer” (turn portal into an action engine, not a wiki)
    1. Stabilize and explain the Backstage deployment you already have:
-      - Backstage is deployed via ArgoCD from [infrastructure/backstage-app.yaml](infrastructure/backstage-app.yaml)
+      - Backstage is deployed via ArgoCD from [infrastructure/apps/backstage-app.yaml](infrastructure/apps/backstage-app.yaml)
       - Helm chart wrapper in [infrastructure/backstage](infrastructure/backstage) with values in [infrastructure/backstage/values.yaml](infrastructure/backstage/values.yaml)
       - Use your incident learnings as part of the system design (“we validate rendered manifests to prevent mis-nested Helm values regressions”).
    2. Implement the single most valuable Backstage capability: a scaffolder “Golden Path” template
@@ -170,7 +170,7 @@ Use this as your default “walk me through your project” answer. The goal is 
 - “ArgoCD is the reconciliation engine. Git is the source of truth; the cluster is continuously converged to match Git. This prevents drift and provides auditability and rollback-by-revert.”
 - Point to the repo wiring:
    - Root GitOps entry: [bootstrap/root-app.yaml](bootstrap/root-app.yaml)
-   - Backstage as a child app: [infrastructure/backstage-app.yaml](infrastructure/backstage-app.yaml)
+   - Backstage as a child app: [infrastructure/apps/backstage-app.yaml](infrastructure/apps/backstage-app.yaml)
 - “Automated sync with self-heal means manual kubectl changes don’t become permanent snowflakes.”
 
 **1:45–3:00 — AI serving: why KServe (standardization over ad-hoc services)**
