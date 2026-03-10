@@ -47,8 +47,13 @@ Create the GitHub token Secret (safe even before token exists; Backstage reads i
 
 ```sh
 kubectl create ns backstage >/dev/null 2>&1 || true
+
+# Replace YOUR_TOKEN with a real GitHub token that can open PRs to this repo.
+# Tip (Git Bash): read it silently to avoid it showing up on-screen.
+read -s GITHUB_TOKEN
 kubectl -n backstage create secret generic neuroscale-backstage-secrets \
-  --from-literal=GITHUB_TOKEN=YOUR_TOKEN
+  --from-literal=GITHUB_TOKEN="$GITHUB_TOKEN" \
+  --dry-run=client -o yaml | kubectl apply -f -
 
 # Important: env vars are read at container start.
 # Restart Backstage so it picks up the new Secret value.
