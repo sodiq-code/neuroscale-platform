@@ -37,6 +37,8 @@ backstage:
         locations:
           - type: url
             target: https://github.com/sodiq-code/neuroscale-platform/blob/main/backstage/templates/model-endpoint/template.yaml
+            rules:
+              - allow: [Template]
 
       scaffolder:
         defaultCommitMessage: "chore(scaffolder): apply template"
