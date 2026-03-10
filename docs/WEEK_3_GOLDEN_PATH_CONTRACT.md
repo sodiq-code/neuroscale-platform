@@ -49,6 +49,11 @@ Create the GitHub token Secret (safe even before token exists; Backstage reads i
 kubectl create ns backstage >/dev/null 2>&1 || true
 kubectl -n backstage create secret generic neuroscale-backstage-secrets \
   --from-literal=GITHUB_TOKEN=YOUR_TOKEN
+
+# Important: env vars are read at container start.
+# Restart Backstage so it picks up the new Secret value.
+kubectl -n backstage rollout restart deploy/neuroscale-backstage
+kubectl -n backstage rollout status deploy/neuroscale-backstage --timeout=300s
 ```
 
 Check Backstage is running:
