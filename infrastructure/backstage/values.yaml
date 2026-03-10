@@ -11,6 +11,14 @@ backstage:
       digest: "sha256:d20016b0455c3d359461be69d85c8b672f0f7ad19d41b773bf4a315ec911ca3c"
       pullPolicy: IfNotPresent
 
+    extraEnvVars:
+      - name: GITHUB_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: neuroscale-backstage-secrets
+            key: GITHUB_TOKEN
+            optional: true
+
     appConfig:
       app:
         baseUrl: http://localhost:7007
@@ -19,6 +27,19 @@ backstage:
         listen:
           port: 7007
           host: "0.0.0.0"
+
+      integrations:
+        github:
+          - host: github.com
+            token: ${GITHUB_TOKEN}
+
+      catalog:
+        locations:
+          - type: url
+            target: https://github.com/sodiq-code/neuroscale-platform/blob/main/backstage/templates/model-endpoint/template.yaml
+
+      scaffolder:
+        defaultCommitMessage: "chore(scaffolder): apply template"
 
     resources:
       requests:

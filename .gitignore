@@ -1,0 +1,6 @@
+# Local chart extraction / inspection artifacts
+infrastructure/backstage/tmpcharts-*/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
