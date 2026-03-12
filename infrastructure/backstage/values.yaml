@@ -24,6 +24,8 @@ backstage:
         baseUrl: http://localhost:7007
       backend:
         baseUrl: http://localhost:7007
+        auth:
+          dangerouslyDisableDefaultAuthPolicy: true
         listen:
           port: 7007
           host: "0.0.0.0"
