@@ -8,4 +8,4 @@ spec:
     spec:
       containers:
         - name: kube-rbac-proxy
-          image: registry.k8s.io/kube-rbac-proxy:v0.13.1
+          $patch: delete
