@@ -21,6 +21,7 @@ backstage:
 
     appConfig:
       app:
+        title: NeuroScale Platform
         baseUrl: http://localhost:7010
       backend:
         baseUrl: http://localhost:7010
