@@ -55,6 +55,14 @@ kubectl -n backstage create secret generic neuroscale-backstage-secrets \
   --from-literal=GITHUB_TOKEN="$GITHUB_TOKEN" \
   --dry-run=client -o yaml | kubectl apply -f -
 
+# PowerShell alternative (Windows):
+#   $env:GITHUB_TOKEN = Read-Host -AsSecureString | ConvertFrom-SecureString -AsPlainText
+#   kubectl -n backstage create secret generic neuroscale-backstage-secrets `
+#     --from-literal=GITHUB_TOKEN=$env:GITHUB_TOKEN `
+#     --dry-run=client -o yaml | kubectl apply -f -
+
+# Sanity check: a real GitHub token is typically far longer than 10 characters.
+
 # Important: env vars are read at container start.
 # Restart Backstage so it picks up the new Secret value.
 kubectl -n backstage rollout restart deploy/neuroscale-backstage
