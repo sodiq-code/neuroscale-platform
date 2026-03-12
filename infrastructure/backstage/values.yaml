@@ -21,9 +21,9 @@ backstage:
 
     appConfig:
       app:
-        baseUrl: http://localhost:7007
+        baseUrl: http://localhost:7010
       backend:
-        baseUrl: http://localhost:7007
+        baseUrl: http://localhost:7010
         auth:
           dangerouslyDisableDefaultAuthPolicy: true
         listen:
