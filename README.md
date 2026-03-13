@@ -34,8 +34,12 @@ NeuroScale is a self-service AI inference platform on Kubernetes: developers shi
 
 - ✅ **Milestone A — GitOps spine (drift control proven)**
 - ✅ **Milestone B — AI serving baseline (KServe install GitOps-managed + one endpoint verified)**
-- ⏳ **Milestone C — Golden Path (Backstage creates PR → merge → Argo deploy)**
+- ✅ **Milestone C — Golden Path (Backstage creates PR -> merge -> Argo deploy)**
 - ⏳ **Milestone D — Guardrails (CI + admission policies block unsafe changes)**
+
+## Week 3 reference
+
+- Full Week 3 implementation record (contract, incidents, RCA, troubleshooting, runbook): `docs/WEEK_3_GOLDEN_PATH_CONTRACT.md`
 
 ## Demo: Milestone A (GitOps drift self-heal)
 
