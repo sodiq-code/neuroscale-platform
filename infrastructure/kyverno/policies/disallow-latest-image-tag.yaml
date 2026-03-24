@@ -1,0 +1,29 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-latest-image-tag
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: validate-deployment-container-tags
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+              namespaces:
+                - default
+      validate:
+        message: "Deployment container images must use an immutable, non-latest tag."
+        foreach:
+          - list: request.object.spec.template.spec.containers
+            deny:
+              conditions:
+                any:
+                  - key: "{{ element.image }}"
+                    operator: Equals
+                    value: "*:latest"
+                  - key: "{{ element.image }}"
+                    operator: NotEquals
+                    value: "*:*"

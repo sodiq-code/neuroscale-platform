@@ -1,0 +1,67 @@
+name: Guardrails Checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate-kubernetes-manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Kubeconform validation
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          bash scripts/ci/render_backstage.sh
+
+          files=$(find apps bootstrap infrastructure \
+            -type f \
+            \( -name '*.yaml' -o -name '*.yml' \) \
+            ! -path 'backstage/templates/*' \
+            ! -path 'infrastructure/backstage/charts/*' \
+            ! -path 'infrastructure/backstage/tmpcharts-*/*')
+
+          rendered_files=$(find .ci/rendered -type f \( -name '*.yaml' -o -name '*.yml' \) 2>/dev/null || true)
+
+          if [ -z "$files" ]; then
+            echo "No Kubernetes manifest files found to validate."
+            exit 0
+          fi
+
+          docker run --rm -v "$PWD:/work" -w /work ghcr.io/yannh/kubeconform:latest \
+            -strict \
+            -summary \
+            -ignore-missing-schemas \
+            $files $rendered_files
+
+  validate-policies-against-app-manifests:
+    runs-on: ubuntu-latest
+    needs:
+      - validate-kubernetes-manifests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Kyverno policy checks
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          app_files=$(find apps -type f \( -name '*.yaml' -o -name '*.yml' \))
+          if [ -z "$app_files" ]; then
+            echo "No app manifests found under apps/."
+            exit 0
+          fi
+
+          docker run --rm -v "$PWD:/work" -w /work ghcr.io/kyverno/kyverno:v1.12.5 \
+            apply infrastructure/kyverno/policies \
+            --resource $app_files

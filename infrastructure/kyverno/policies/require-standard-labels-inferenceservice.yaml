@@ -1,0 +1,23 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-standard-labels-inferenceservice
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: check-owner-and-cost-center-on-isvc
+      match:
+        any:
+          - resources:
+              kinds:
+                - InferenceService
+              namespaces:
+                - default
+      validate:
+        message: "InferenceService resources must set metadata.labels.owner and metadata.labels.cost-center."
+        pattern:
+          metadata:
+            labels:
+              owner: "?*"
+              cost-center: "?*"
