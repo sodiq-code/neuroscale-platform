@@ -4,6 +4,9 @@ kind: Deployment
 metadata:
   name: nginx-test
   namespace: default
+  labels:
+    owner: platform-team
+    cost-center: cc-platform
 spec:
   # Single replica for test environment
   replicas: 1
@@ -16,11 +19,20 @@ spec:
     metadata:
       labels:
         app: nginx
+        owner: platform-team
+        cost-center: cc-platform
     spec:
       containers:
       # NGINX container configuration
       - name: nginx
         image: nginx:1.27.3
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 250m
+            memory: 256Mi
         ports:
         # Listen on port 80
         - containerPort: 80

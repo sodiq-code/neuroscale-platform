@@ -23,12 +23,13 @@ jobs:
 
           bash scripts/ci/render_backstage.sh
 
-          files=$(find apps bootstrap infrastructure \
+          # Validate Kubernetes manifests only.
+          # Exclude Kustomize/Helm inputs which are not Kubernetes API objects.
+          files=$(find apps bootstrap infrastructure/apps infrastructure/kyverno/policies \
             -type f \
             \( -name '*.yaml' -o -name '*.yml' \) \
             ! -path 'backstage/templates/*' \
-            ! -path 'infrastructure/backstage/charts/*' \
-            ! -path 'infrastructure/backstage/tmpcharts-*/*')
+            ! -name 'kustomization.yaml')
 
           rendered_files=$(find .ci/rendered -type f \( -name '*.yaml' -o -name '*.yml' \) 2>/dev/null || true)
 
@@ -63,5 +64,5 @@ jobs:
           fi
 
           docker run --rm -v "$PWD:/work" -w /work ghcr.io/kyverno/kyverno:v1.12.5 \
-            apply infrastructure/kyverno/policies \
+            apply infrastructure/kyverno/policies/*.yaml \
             --resource $app_files

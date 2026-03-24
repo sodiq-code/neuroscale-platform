@@ -5,6 +5,9 @@ kind: InferenceService                   # Resource type
 metadata:
   name: sklearn-iris                     # Name of the InferenceService
   namespace: default                     # Namespace where the service is deployed
+  labels:
+    owner: platform-team
+    cost-center: cc-platform
 spec:
   predictor:
     model:

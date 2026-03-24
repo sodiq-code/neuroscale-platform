@@ -3,6 +3,9 @@ kind: InferenceService
 metadata:
   name: ${{ values.name }}
   namespace: default
+  labels:
+    owner: ${{ values.owner }}
+    cost-center: ${{ values.costCenter }}
 spec:
   predictor:
     model:
