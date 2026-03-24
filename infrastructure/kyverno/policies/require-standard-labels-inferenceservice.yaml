@@ -3,6 +3,7 @@ kind: ClusterPolicy
 metadata:
   name: require-standard-labels-inferenceservice
 spec:
+  admission: true
   validationFailureAction: Enforce
   background: true
   rules:
