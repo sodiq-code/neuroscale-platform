@@ -12,6 +12,8 @@ spec:
     - title: Model endpoint
       required:
         - name
+        - owner
+        - costCenter
       properties:
         name:
           title: Endpoint name
@@ -26,6 +28,16 @@ spec:
           title: Model storage URI
           type: string
           default: gs://kfserving-examples/models/sklearn/1.0/model
+        owner:
+          title: Owner label
+          type: string
+          description: Team or individual accountable for this endpoint.
+          default: ml-platform
+        costCenter:
+          title: Cost center label
+          type: string
+          description: Cost attribution key used by finance and governance.
+          default: cc-ml
 
   steps:
     - id: fetchBase
@@ -37,6 +49,8 @@ spec:
           name: ${{ parameters.name }}
           modelFormat: ${{ parameters.modelFormat }}
           storageUri: ${{ parameters.storageUri }}
+          owner: ${{ parameters.owner }}
+          costCenter: ${{ parameters.costCenter }}
 
     - id: publishPr
       name: Open pull request

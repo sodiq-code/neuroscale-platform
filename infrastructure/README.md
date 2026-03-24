@@ -8,3 +8,4 @@ Key folders:
 - `backstage/`: Backstage Helm wrapper
 - `kserve/`: runtime-level KServe resources (e.g., `ClusterServingRuntime`)
 - `serving-stack/`: pinned install layer for cert-manager + Knative + Kourier + KServe
+- `kyverno/`: policy engine install and enforceable platform guardrails

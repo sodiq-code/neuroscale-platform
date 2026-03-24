@@ -1,6 +1,13 @@
 # Local chart extraction / inspection artifacts
 infrastructure/backstage/tmpcharts-*/
 
+# CI render output (generated)
+.ci/
+
+# Local troubleshooting artifacts
+pf.log
+bash.exe.stackdump
+
 # OS/editor noise
 .DS_Store
 Thumbs.db

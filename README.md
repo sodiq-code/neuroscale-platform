@@ -22,20 +22,23 @@ NeuroScale is a self-service AI inference platform on Kubernetes: developers shi
 	- Test app Argo app: `infrastructure/apps/test-app-app.yaml`
 	- Serving stack Argo app: `infrastructure/apps/serving-stack-app.yaml`
 	- KServe runtimes Argo app: `infrastructure/apps/kserve-runtimes-app.yaml`
+	- Policy guardrails Argo app: `infrastructure/apps/policy-guardrails-app.yaml`
 	- Example inference app Argo app: `infrastructure/apps/ai-model-alpha-app.yaml`
 	- Backstage Helm wrapper: `infrastructure/backstage/`
+	- Kyverno install + policy pack: `infrastructure/kyverno/`
 	- KServe runtime (example): `infrastructure/kserve/sklearn-runtime.yaml`
 - Workloads/apps deployed via GitOps: `apps/`
 	- Test workload: `apps/test-app/deployment.yaml`
 	- Example inference service: `apps/ai-model-alpha/inference-service.yaml`
 - Execution plan and interview script (internal): `plan-neuroScale.prompt.md`
+- PR checks workflow: `.github/workflows/guardrails-checks.yaml`
 
 ## Status (milestones)
 
 - ✅ **Milestone A — GitOps spine (drift control proven)**
 - ✅ **Milestone B — AI serving baseline (KServe install GitOps-managed + one endpoint verified)**
 - ✅ **Milestone C — Golden Path (Backstage creates PR -> merge -> Argo deploy)**
-- ⏳ **Milestone D — Guardrails (CI + admission policies block unsafe changes)**
+- 🚧 **Milestone D — Guardrails (Kyverno admission + PR validation baseline in place)**
 
 ## Week 3 reference
 

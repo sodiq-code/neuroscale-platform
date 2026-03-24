@@ -3,6 +3,9 @@ kind: InferenceService
 metadata:
   name: demo-iris-2
   namespace: default
+  labels:
+    owner: platform-team
+    cost-center: cc-demo
 spec:
   predictor:
     model:

@@ -237,6 +237,68 @@ Validation:
 
 ## Operational Runbook (Current Working Path)
 
+### Daily Morning Routine (Fast Start)
+Use this when the cluster already exists and you are just resuming work after laptop shutdown.
+
+1. Start Docker Desktop and wait until it is fully running.
+2. Start the existing k3d cluster:
+
+```sh
+k3d cluster start neuroscale
+```
+
+3. Run a quick health gate before opening UIs:
+
+```sh
+kubectl get nodes
+kubectl -n argocd get applications
+kubectl -n kserve get deploy,pods
+```
+
+4. Re-open required tunnels (port-forwards always die after terminal/cluster stop):
+
+Terminal 1 (ArgoCD):
+```sh
+kubectl port-forward svc/argocd-server -n argocd 8081:443
+```
+
+Terminal 2 (AI gateway via Kourier):
+```sh
+kubectl -n kourier-system port-forward svc/kourier 8082:80
+```
+
+Terminal 3 (Backstage, when needed):
+```sh
+kubectl -n backstage port-forward svc/neuroscale-backstage 7010:7007
+```
+
+5. Verify access:
+- ArgoCD: `https://localhost:8081`
+- Backstage: `http://localhost:7010/create`
+- Backstage actions: `http://localhost:7010/create/actions`
+
+6. If Backstage PR creation fails due to token/auth, run recovery:
+
+```sh
+read -s GITHUB_TOKEN
+kubectl -n backstage create secret generic neuroscale-backstage-secrets \
+  --from-literal=GITHUB_TOKEN="$GITHUB_TOKEN" \
+  --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n backstage rollout restart deploy/neuroscale-backstage
+kubectl -n backstage rollout status deploy/neuroscale-backstage --timeout=300s
+```
+
+### End of Day (Battery Save)
+Stop the cluster when done:
+
+```sh
+k3d cluster stop neuroscale
+```
+
+Notes:
+- After `k3d cluster start`, always re-run port-forward commands.
+- If a port is busy, use a different local port or terminate stale port-forward processes.
+
 ### Backstage token setup
 ```sh
 kubectl create ns backstage >/dev/null 2>&1 || true
