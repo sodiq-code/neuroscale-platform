@@ -3,6 +3,7 @@ kind: ClusterPolicy
 metadata:
   name: require-standard-labels-deployment
 spec:
+  admission: true
   validationFailureAction: Enforce
   background: true
   rules:
@@ -14,6 +15,7 @@ spec:
                 - Deployment
               namespaces:
                 - default
+      skipBackgroundRequests: true
       validate:
         message: "Deployment resources must set metadata.labels.owner and metadata.labels.cost-center."
         pattern:
