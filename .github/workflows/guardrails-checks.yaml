@@ -57,12 +57,12 @@ jobs:
         run: |
           set -euo pipefail
 
-          app_files=$(find apps -type f \( -name '*.yaml' -o -name '*.yml' \))
-          if [ -z "$app_files" ]; then
+          mapfile -t app_files < <(find apps -type f \( -name '*.yaml' -o -name '*.yml' \))
+          if [ ${#app_files[@]} -eq 0 ]; then
             echo "No app manifests found under apps/."
             exit 0
           fi
 
-          docker run --rm -v "$PWD:/work" -w /work ghcr.io/kyverno/kyverno:v1.12.5 \
+          docker run --rm -v "$PWD:/work" -w /work ghcr.io/kyverno/kyverno-cli:v1.12.5 \
             apply infrastructure/kyverno/policies/*.yaml \
-            --resource $app_files
+            --resource "${app_files[@]}"
