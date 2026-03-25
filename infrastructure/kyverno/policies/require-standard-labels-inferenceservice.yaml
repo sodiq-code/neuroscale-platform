@@ -15,6 +15,7 @@ spec:
                 - InferenceService
               namespaces:
                 - default
+      skipBackgroundRequests: true
       validate:
         message: "InferenceService resources must set metadata.labels.owner and metadata.labels.cost-center."
         pattern:
