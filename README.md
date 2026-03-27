@@ -226,8 +226,14 @@ neuroscale-platform/
 |-- backstage/
 |   +-- templates/model-endpoint/        # Scaffolder template (Golden Path)
 |
+|-- scripts/
+|   |-- bootstrap.sh                     # One-shot cluster setup (any laptop → running platform)
+|   |-- smoke-test.sh                    # Colour-coded end-to-end smoke test (all 4 milestones)
+|   +-- ci/
+|       +-- render_backstage.sh          # Renders Backstage Helm chart for schema validation
+|
 |-- .github/workflows/
-|   +-- guardrails-checks.yaml           # CI: kubeconform + Kyverno policy simulation
+|   +-- guardrails-checks.yaml           # CI: kubeconform + Kyverno simulation + cost proxy
 |
 |-- docs/
 |   |-- PROJECT_MEMORY.md
@@ -239,7 +245,8 @@ neuroscale-platform/
 |   |-- REALITY_CHECK_MILESTONE_1_GITOPS_SPINE.md
 |   |-- REALITY_CHECK_MILESTONE_2_KSERVE_SERVING.md
 |   |-- REALITY_CHECK_MILESTONE_3_GOLDEN_PATH.md
-|   +-- REALITY_CHECK_MILESTONE_4_GUARDRAILS.md
+|   |-- REALITY_CHECK_MILESTONE_4_GUARDRAILS.md
+|   +-- REALITY_CHECK_MILESTONE_5_COST_PROXY.md
 |
 |-- plan-neuroScale.prompt.md
 +-- README.md
@@ -254,7 +261,8 @@ neuroscale-platform/
 | **A** | GitOps spine: ArgoCD manages infra + apps; drift self-heal proven | Done |
 | **B** | AI serving baseline: GitOps-managed KServe install + one endpoint verified | Done |
 | **C** | Golden Path: Backstage creates PR -> merge -> ArgoCD deploys -> InferenceService Ready | Done |
-| **D** | Guardrails: Kyverno admission + PR-time CI policy simulation baseline | Done |
+| **D** | Guardrails: Kyverno admission + PR-time CI policy simulation (false-green fixed) | Done |
+| **E** | Cost proxy + portability: resource-delta PR comment, bootstrap script, visual smoke test | Done |
 
 ---
 
@@ -267,13 +275,33 @@ neuroscale-platform/
 - `kubectl` installed
 - `helm` installed
 
-### Start the cluster
+### First-time setup on any laptop
+
+```bash
+# One command creates the cluster, installs ArgoCD, and applies the root app:
+bash scripts/bootstrap.sh
+```
+
+The script checks all prerequisites, creates the k3d cluster, installs ArgoCD, and prints the admin password and port-forward commands when finished.
+
+### Resume an existing cluster (daily startup)
 
 ```bash
 k3d cluster start neuroscale
+kubectl config use-context k3d-neuroscale
 ```
 
-### Morning health gate (run every session)
+### Verify the platform is healthy
+
+```bash
+# Run the colour-coded smoke test (tests all 4 milestones):
+bash scripts/smoke-test.sh
+
+# Skip the destructive drift test for a quick sanity check:
+bash scripts/smoke-test.sh --skip-drift
+```
+
+### Morning health gate (manual checks)
 
 ```bash
 kubectl get nodes
@@ -313,7 +341,7 @@ kubectl get deploy nginx-test -n default
 
 ```bash
 # Get predictor pod name
-kubectl -n default get pods -l serving.knative.dev/revision=demo-iris-2-predictor-00001
+kubectl -n default get pods | grep "demo-iris-2.*Running"
 
 # Port-forward to predictor runtime directly (deterministic local proof)
 kubectl -n default port-forward pod/<predictor-pod-name> 18080:8080
@@ -354,7 +382,8 @@ EOF
 | A — GitOps Spine | [docs/REALITY_CHECK_MILESTONE_1_GITOPS_SPINE.md](docs/REALITY_CHECK_MILESTONE_1_GITOPS_SPINE.md) | ArgoCD repo-server `connection refused`; Argo `Unknown` comparison state; app stuck not syncing |
 | B — KServe Serving | [docs/REALITY_CHECK_MILESTONE_2_KSERVE_SERVING.md](docs/REALITY_CHECK_MILESTONE_2_KSERVE_SERVING.md) | Istio vs Kourier ingress mismatch; `kube-rbac-proxy` ImagePullBackOff; Knative CRD rendering conflict |
 | C — Golden Path | [docs/REALITY_CHECK_MILESTONE_3_GOLDEN_PATH.md](docs/REALITY_CHECK_MILESTONE_3_GOLDEN_PATH.md) | Backstage CrashLoopBackOff (Helm values mis-nesting); blank `/create/actions` (401 on scaffolder); PR merged but app stayed OutOfSync |
-| D — Guardrails | [docs/REALITY_CHECK_MILESTONE_4_GUARDRAILS.md](docs/REALITY_CHECK_MILESTONE_4_GUARDRAILS.md) | InferenceService CRD removed by patch; Kyverno label name mismatch; CI policy simulation environment drift |
+| D — Guardrails | [docs/REALITY_CHECK_MILESTONE_4_GUARDRAILS.md](docs/REALITY_CHECK_MILESTONE_4_GUARDRAILS.md) | InferenceService CRD removed by patch; Kyverno label name mismatch; CI policy simulation false-green (fixed in Milestone E) |
+| E — Cost Proxy + Portability | [docs/REALITY_CHECK_MILESTONE_5_COST_PROXY.md](docs/REALITY_CHECK_MILESTONE_5_COST_PROXY.md) | CI false-green root cause + fix; cost proxy design trade-offs; bootstrap script decisions |
 
 Full incident postmortem for the Backstage CrashLoopBackOff: [infrastructure/INCIDENT_BACKSTAGE_CRASHLOOP_RCA.md](infrastructure/INCIDENT_BACKSTAGE_CRASHLOOP_RCA.md)
 
@@ -375,8 +404,9 @@ Full incident postmortem for the Backstage CrashLoopBackOff: [infrastructure/INC
 | Check | Tool | What It Catches |
 |-------|------|----------------|
 | Schema validation | `kubeconform` | Malformed YAML, wrong API versions, missing required fields |
-| Policy simulation | `kyverno-cli apply` | Policy violations against actual rendered manifests before merge |
+| Policy simulation | `kyverno-cli apply` + stdout check | Policy violations against actual rendered manifests before merge (exit-code-only check was a false-green; now uses dual exit-code + stdout check) |
 | Helm rendering | `helm template` + `render_backstage.sh` | Helm values hierarchy bugs (the exact failure class from the Backstage RCA) |
+| Resource delta | Python + PyYAML | CPU/memory requests in changed `apps/` manifests; posts as PR comment and GitHub Actions job summary |
 
 ---
 
@@ -419,8 +449,9 @@ kubectl -n backstage rollout restart deploy/neuroscale-backstage
 | "How do you prevent bad configs from reaching prod?" | Section 8 + `infrastructure/kyverno/policies/` |
 | "Show me a real incident you've debugged" | `infrastructure/INCIDENT_BACKSTAGE_CRASHLOOP_RCA.md` |
 | "What failed and what did you learn?" | `docs/REALITY_CHECK_MILESTONE_*.md` |
-| "How does cost attribution work?" | Kyverno `require-standard-labels` policy + `cost-center` label requirement |
+| "How does cost attribution work?" | Kyverno `require-standard-labels` policy + `cost-center` label requirement + CI resource-delta PR comment |
 | "Why Kourier instead of Istio?" | Section 3.3 + `docs/REALITY_CHECK_MILESTONE_2_KSERVE_SERVING.md` |
+| "How can I verify the platform works on my laptop?" | `scripts/bootstrap.sh` + `scripts/smoke-test.sh` |
 
 ---
 

@@ -13,6 +13,7 @@ Click template (Backstage) → PR created → merge → ArgoCD sync → KServe I
 - Milestone B — AI serving baseline (GitOps-managed KServe install + one endpoint verified): ✅ DONE
 - Milestone C — Golden Path (Backstage creates PR → merge → Argo deploy): ✅ DONE
 - Milestone D — Guardrails (CI + admission policies block unsafe changes): ✅ DONE
+- Milestone E — Cost proxy + portability (resource-delta PR comment, bootstrap script, visual smoke test, CI false-green fixed): ✅ DONE
 
 ## 4) Key repo files (anchors)
 - GitOps root app: bootstrap/root-app.yaml
@@ -24,6 +25,9 @@ Click template (Backstage) → PR created → merge → ArgoCD sync → KServe I
 - KServe runtime example: infrastructure/kserve/sklearn-runtime.yaml
 - Backstage incident RCA (learning → prevention): infrastructure/INCIDENT_BACKSTAGE_CRASHLOOP_RCA.md
 - Execution plan + interview script: plan-neuroScale.prompt.md
+- Bootstrap script (first-time cluster setup): scripts/bootstrap.sh
+- Smoke test (visual end-to-end verification): scripts/smoke-test.sh
+- CI workflow (schema + policy + cost proxy): .github/workflows/guardrails-checks.yaml
 
 ## 5) Decisions (keep these stable unless explicitly changed)
 - Demo-first: prioritize a reliable, repeatable demo loop over extra realism.
@@ -66,12 +70,12 @@ Click template (Backstage) → PR created → merge → ArgoCD sync → KServe I
 - Milestone B failures: docs/REALITY_CHECK_MILESTONE_2_KSERVE_SERVING.md
 - Milestone C failures: docs/REALITY_CHECK_MILESTONE_3_GOLDEN_PATH.md
 - Milestone D failures: docs/REALITY_CHECK_MILESTONE_4_GUARDRAILS.md
+- Milestone E design decisions: docs/REALITY_CHECK_MILESTONE_5_COST_PROXY.md
 
-## 9) Post-Milestone D backlog (hardening for production parity)
+## 9) Post-Milestone E backlog (hardening for production parity)
 1. Replace dangerouslyDisableDefaultAuthPolicy with a real Backstage auth provider.
 2. Restore kube-rbac-proxy with a verified reachable image mirror.
 3. Enforce strict branch protection with no personal bypass on main.
-4. Add synthetic smoke test: run Backstage template and verify InferenceService readiness automatically.
+4. Add separate values profiles (dev, staging, prod) with explicit probe defaults.
 5. Add OpenCost/Kubecost-style showback dashboards once labels and bounds are enforced.
 6. Add Terraform-managed cloud resources + Infracost PR cost estimates for IaC.
-7. Add separate values profiles (dev, staging, prod) with explicit probe defaults.
