@@ -18,7 +18,7 @@ Getting there was not simple.
 
 ---
 
-## Failure 1: ArgoCD Repo-Server Enters `Unknown` Comparison State
+## Failure 1: ArgoCD repo-server Enters Unknown Comparison State Due to Controller Dependency Ordering (40 min)
 
 ### Symptom
 
@@ -106,7 +106,7 @@ kubectl -n argocd logs deploy/argocd-repo-server --tail=20
 
 ---
 
-## Failure 2: App Stuck in `Progressing` After Root App Applied
+## Failure 2: ArgoCD test-app Stuck in Progressing — Stale ingress-nginx Admission Webhook Blocks All Resource Creation
 
 ### Symptom
 
@@ -177,7 +177,7 @@ A stale webhook from a previous workload silently blocked all resource creation 
 
 ---
 
-## Failure 3: Self-Heal Demo Showed `Pending` Instead of Immediate Recreation
+## Failure 3: Self-Heal Demo Pod Stuck in Pending — CPU Requests Exceed Available k3d Node Capacity (45 sec)
 
 ### Symptom
 
@@ -255,7 +255,7 @@ nginx-test    1/1     1            1           15s
 
 ---
 
-## Debugging Commands Reference for This Milestone
+## Debugging Commands Reference: ArgoCD Comparison Failures, Stale Webhooks, and Pod Scheduling
 
 ```bash
 # Diagnose ArgoCD comparison failures

@@ -10,7 +10,7 @@ Milestone B goal: a single `InferenceService` named `sklearn-iris` reaches `Read
 
 ---
 
-## Failure 1: KServe InferenceService Stuck `Not Ready` — The Istio vs Kourier Ingress Mismatch
+## Failure 1: KServe InferenceService Stuck Not Ready — Istio vs Kourier Ingress Mismatch Causes ReconcileError Loop (3 hours)
 
 ### Symptom
 
@@ -96,7 +96,7 @@ This failure cost approximately 3 hours. The KServe documentation does not promi
 
 ---
 
-## Failure 2: ArgoCD Serving-Stack App Fails to Sync — Duplicate Knative CRD Conflict
+## Failure 2: ArgoCD Serving-Stack Sync Fails — Duplicate Knative CRD Exceeds 256 KB Annotation Size Limit
 
 ### Symptom
 
@@ -151,7 +151,7 @@ After these changes, serving-stack reached `Synced/Healthy`.
 
 ---
 
-## Failure 3: `kube-rbac-proxy` Sidecar ImagePullBackOff Blocks Admission Webhook
+## Failure 3: kube-rbac-proxy Sidecar ImagePullBackOff Blocks KServe Admission Webhook — gcr.io Registry Access Restriction
 
 ### Symptom
 
@@ -245,7 +245,7 @@ The `kube-rbac-proxy` image pull failure was an external dependency failure (reg
 
 ---
 
-## Failure 4: Inference Request Returns HTTP 405 from `example.com`
+## Failure 4: Inference Request Returns HTTP 405 — IngressDomain Placeholder Resolves to Public Internet Instead of Local Cluster
 
 ### Symptom
 
@@ -336,7 +336,7 @@ $ curl -sS \
 
 ---
 
-## Debugging Commands Reference for This Milestone
+## Debugging Commands Reference: KServe InferenceService Conditions, Webhook Endpoints, and Network Path Verification
 
 ```bash
 # Check InferenceService ready status and conditions

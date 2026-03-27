@@ -6,7 +6,7 @@
 
 ## Table of Contents
 
-1. [Why This Platform Exists](#1-why-this-platform-exists)
+1. [Why NeuroScale Exists: Addressing 2026 ML Infrastructure Pain Signals](#1-why-neuroscale-exists-addressing-2026-ml-infrastructure-pain-signals)
 2. [Architecture: Control Plane and Data Plane](#2-architecture-control-plane-and-data-plane)
 3. [System Flow: How Everything Connects](#3-system-flow-how-everything-connects)
    - [GitOps: How Deployments Are Triggered](#31-gitops-how-deployments-are-triggered)
@@ -17,12 +17,12 @@
 6. [Quickstart: Running the Demo Locally](#6-quickstart-running-the-demo-locally)
 7. [Reality Check Documentation](#7-reality-check-documentation)
 8. [Guardrails: What Gets Blocked and Why](#8-guardrails-what-gets-blocked-and-why)
-9. [Operational Runbook Summary](#9-operational-runbook-summary)
-10. [Interview Defense Map](#10-interview-defense-map)
+9. [Operational Runbook: ArgoCD Sync Recovery, KServe Restart, and Backstage Token Refresh](#9-operational-runbook-argocd-sync-recovery-kserve-restart-and-backstage-token-refresh)
+10. [Interview Defense: Mapping Platform Decisions to Production Engineering Signals](#10-interview-defense-mapping-platform-decisions-to-production-engineering-signals)
 
 ---
 
-## 1. Why This Platform Exists
+## 1. Why NeuroScale Exists: Addressing 2026 ML Infrastructure Pain Signals
 
 The 2026 platform engineering pain signals this repo directly addresses:
 
@@ -380,7 +380,7 @@ Full incident postmortem for the Backstage CrashLoopBackOff: [infrastructure/INC
 
 ---
 
-## 9. Operational Runbook Summary
+## 9. Operational Runbook: ArgoCD Sync Recovery, KServe Restart, and Backstage Token Refresh
 
 See `docs/WEEK_3_GOLDEN_PATH_CONTRACT.md` for the full runbook.
 
@@ -409,7 +409,7 @@ kubectl -n backstage rollout restart deploy/neuroscale-backstage
 
 ---
 
-## 10. Interview Defense Map
+## 10. Interview Defense: Mapping Platform Decisions to Production Engineering Signals
 
 | Question | Where to Point |
 |----------|---------------|

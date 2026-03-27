@@ -16,7 +16,7 @@ Backstage form -> PR opened -> merge -> ArgoCD sync -> InferenceService Ready ->
 
 ---
 
-## Failure 1: Backstage Template Not Visible in Catalog — "Kind Not Allowed"
+## Failure 1: Backstage Template Not Visible in Catalog — Catalog Ingestion Silently Rejects Template Kind Without Explicit allow Rule
 
 ### Symptom
 
@@ -68,7 +68,7 @@ The template appeared in `/create` within 60 seconds.
 
 ---
 
-## Failure 2: `/create/actions` Loads as Blank Page — 401 Missing Credentials
+## Failure 2: Backstage /create/actions Blank Page — Scaffolder Actions API Returns 401 Due to Missing Internal Auth Policy
 
 ### Symptom
 
@@ -110,7 +110,7 @@ An empty scaffolder form is indistinguishable from a misconfigured form to an en
 
 ---
 
-## Failure 3: React Runtime Crash — `Missing required config value at 'app.title'`
+## Failure 3: Backstage React Frontend Crashes on Load — Missing Required app.title Config Key Causes Blank White Screen
 
 ### Symptom
 
@@ -149,7 +149,7 @@ Note: `app.baseUrl` and `backend.baseUrl` were also absent and needed to match t
 
 ---
 
-## Failure 4: Backstage CrashLoopBackOff — Helm Values Mis-Nesting
+## Failure 4: Backstage CrashLoopBackOff — Helm Dependency Values Mis-Nesting Causes Startup Probe to Use Default 2s Delay
 
 ### Symptom
 
@@ -189,7 +189,7 @@ Developer portal unavailable for the duration of the incident. Every rolling upd
 
 ---
 
-## Failure 5: GitHub Token Issues — PR Creation Fails Silently
+## Failure 5: Backstage Scaffolder PR Creation Fails — GitHub Token Secret Contains Placeholder Value Not Replaced After Setup
 
 ### Symptom
 
@@ -232,7 +232,7 @@ This failure is subtle because `kubectl describe secret` shows the key exists an
 
 ---
 
-## Failure 6: PR Merged — ArgoCD Child App `OutOfSync` With Webhook Failure
+## Failure 6: PR Merged but ArgoCD demo-iris-2 Stays OutOfSync — kube-rbac-proxy Fix Applied via kubectl Not Committed to Git, Reverted by selfHeal
 
 ### Symptom
 
@@ -288,7 +288,7 @@ The PR-merged-but-nothing-deployed experience is the worst possible failure for 
 
 ---
 
-## Failure 7: Inference Verification Returns HTTP 307 Redirect
+## Failure 7: Inference Endpoint Returns HTTP 307 Redirect — k3d Traefik Intercepts Request Before Reaching Kourier
 
 ### Symptom
 
@@ -366,7 +366,7 @@ $ curl -sS \
 
 ---
 
-## Debugging Commands Reference for This Milestone
+## Debugging Commands Reference: Backstage Catalog Ingestion, Scaffolder Auth, ArgoCD Sync, and Inference Verification
 
 ```bash
 # Check Backstage catalog ingestion errors
