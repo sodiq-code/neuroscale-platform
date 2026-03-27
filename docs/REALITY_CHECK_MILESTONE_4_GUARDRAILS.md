@@ -23,7 +23,7 @@ Submit PR with non-compliant manifest
 
 ---
 
-## Failure 1: Kyverno Install Causes ArgoCD Serving-Stack App to Enter `Unknown` State
+## Failure 1: Kyverno Install Disrupts ArgoCD Serving-Stack — Webhook Registration Before Pod Readiness Causes Unknown State
 
 ### Symptom
 
@@ -167,7 +167,7 @@ For a developer experiencing this, the symptom is: "I merged the PR, ArgoCD is s
 
 ---
 
-## Failure 3: InferenceService CRD Removed by `remove-inferenceservice-crd` Patch — All Endpoints Lost
+## Failure 3: InferenceService CRD Deleted by Direct kubectl Apply of Kustomize $patch:delete — All Endpoints Lost (SEV-1)
 
 ### Symptom
 
@@ -233,7 +233,7 @@ This incident directly motivated the PR: `fix/serving-stack-restore-isvc-crd` (c
 
 ---
 
-## Failure 4: CI Policy Simulation Passes for Non-Compliant Manifests
+## Failure 4: CI Kyverno Policy Simulation Returns False Green — kyverno-cli apply Exits 0 on Policy Violations (2-week false positive)
 
 ### Symptom
 
@@ -345,7 +345,7 @@ inferenceservice.serving.kserve.io/demo-iris-2 configured
 
 ---
 
-## Debugging Commands Reference for This Milestone
+## Debugging Commands Reference: Kyverno Admission Decisions, Policy Status, and CI Simulation Validation
 
 ```bash
 # Check Kyverno pod health and webhook readiness
