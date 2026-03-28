@@ -54,7 +54,7 @@ $ bash scripts/smoke-test.sh
    - [Backstage: How Services Are Cataloged and Scaffolded](#32-backstage-how-services-are-cataloged-and-scaffolded)
    - [KServe: How Inference Is Handled](#33-kserve-how-inference-is-handled)
 4. [Repository Map](#4-repository-map)
-5. [Milestone Status](#5-milestone-status)
+5. [Milestone status: what's verified and what breaks it](#5-milestone-status-whats-verified-and-what-breaks-it)
    - [What Each Milestone Cost to Build](#what-each-milestone-cost-to-build-the-failures-not-the-happy-path)
 6. [Quickstart: Running the Demo Locally](#6-quickstart-running-the-demo-locally)
 7. [Reality Check Documentation](#7-reality-check-documentation)
@@ -79,6 +79,33 @@ The 2026 platform engineering pain signals this repo directly addresses:
 ---
 
 ## 2. Architecture: Control Plane and Data Plane
+
+### Component interaction diagram
+
+```mermaid
+flowchart TD
+    Dev(["Developer"])
+    BS["Backstage\nGolden Path form"]
+    PR["GitHub PR + CI\nkubeconform · kyverno-cli · resource-delta"]
+    ARGO["ArgoCD\nApplicationSet · self-heal · prune"]
+    KYV["Kyverno\nAdmission Webhook · 5 ClusterPolicies"]
+    KS["KServe\nInferenceService\nKnative → Kourier → Predictor Pod"]
+    OC["OpenCost\nPer-team cost showback"]
+
+    CIBLOCK(["❌ PR blocked:\nschema errors · policy violations\nmissing labels or resource limits"])
+    KYBLOCK(["❌ Admission blocked:\nno owner/cost-center labels\nno CPU/memory limits\n:latest image tag · root containers"])
+
+    Dev -->|"1. fills form"| BS
+    BS -->|"2. opens PR:\napps/name/inference-service.yaml"| PR
+    PR --> CIBLOCK
+    PR -->|"3. merge"| ARGO
+    ARGO -->|"4. applies manifests\nGit self-heals any drift in ~3 min"| KYV
+    KYV --> KYBLOCK
+    KYV -->|"5. admitted ✅"| KS
+    KS -->|"6. owner + cost-center labels\n→ Prometheus → per-team costs"| OC
+```
+
+### ASCII detail: Control Plane and Data Plane
 
 ```
 +--------------------------------- CONTROL PLANE ---------------------------------+
@@ -329,16 +356,16 @@ neuroscale-platform/
 
 ---
 
-## 5. Milestone Status
+## 5. Milestone status: what's verified and what breaks it
 
-| Milestone | Description | Status |
-|-----------|-------------|--------|
-| **A** | GitOps spine: ArgoCD manages infra + apps; drift self-heal proven | Done |
-| **B** | AI serving baseline: GitOps-managed KServe install + one endpoint verified | Done |
-| **C** | Golden Path: Backstage creates PR -> merge -> ArgoCD deploys -> InferenceService Ready | Done |
-| **D** | Guardrails: Kyverno admission + PR-time CI policy simulation (false-green fixed) | Done |
-| **E** | Cost proxy + portability: resource-delta PR comment, bootstrap script, visual smoke test | Done |
-| **F** | Production hardening: ApplicationSet, non-root policy, namespace quotas, OpenCost, multi-env Backstage, guest auth, port-forward-all | Done |
+| Milestone | Business problem eliminated | Verified by smoke test |
+|-----------|-----------------------------|------------------------|
+| **A — GitOps spine** | Configuration drift — any manual `kubectl` change is auto-reverted; infrastructure is recoverable via `git revert` | `[✓ PASS] Drift self-heal: nginx-test recreated in ~20s` |
+| **B — AI serving baseline** | Inference with no deployment path — KServe is GitOps-managed; a new model is a PR, not a kubectl command | `[✓ PASS] InferenceServices: 2/2 Ready=True` · `[✓ PASS] Inference request: demo-iris-2 → {"predictions":[1,1]}` |
+| **C — Golden Path** | Backstage adoption paradox — developers interact with a form, not Kubernetes YAML; the platform handles the rest | `[✓ PASS] demo-iris-2 InferenceService exists (scaffolder output)` |
+| **D — Guardrails** | Security theater — policies that appear to work but don't block anything; the `kyverno-cli` false-green was undetected for 2 weeks before being fixed | `[✓ PASS] Non-compliant InferenceService correctly denied` |
+| **E — Cost + portability** | No cost accountability — unbounded resource consumption with no ownership trail; any engineer can reproduce the full platform on a laptop in one command | `[~ SKIP] Resource-delta PR comment + bootstrap script validated in CI` |
+| **F — Production hardening** | Scale friction — adding a new model required manual GitOps boilerplate; ApplicationSet eliminates that entirely | `[✓ PASS] ApplicationSet generates 3 child Applications` · `[✓ PASS] OpenCost deployment healthy` |
 
 ---
 
