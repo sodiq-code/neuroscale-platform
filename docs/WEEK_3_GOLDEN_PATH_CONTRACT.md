@@ -229,14 +229,14 @@ Validation:
 ## What Changed in Repo During Week 3
 - `backstage/templates/model-endpoint/template.yaml`
 - `backstage/templates/model-endpoint/skeleton/apps/${{ values.name }}/inference-service.yaml`
-- `backstage/templates/model-endpoint/skeleton/infrastructure/apps/${{ values.name }}-app.yaml`
+- ~~`backstage/templates/model-endpoint/skeleton/infrastructure/apps/${{ values.name }}-app.yaml`~~ _(this skeleton file was removed in Milestone F — the ApplicationSet auto-discovers `apps/*` directories; per-app Application files are no longer generated)_
 - `infrastructure/backstage/values.yaml`
 - `infrastructure/serving-stack/kustomization.yaml`
 - `infrastructure/serving-stack/patches/kserve-controller-kube-rbac-proxy-image.yaml`
 - `.gitignore` (temporary chart/extraction artifacts)
 
 ## Known Tradeoffs and Risk Notes
-- `dangerouslyDisableDefaultAuthPolicy: true` is acceptable for local learning but not for production.
+- ~~`dangerouslyDisableDefaultAuthPolicy: true` is acceptable for local learning but not for production.~~ **RESOLVED in Milestone F:** replaced with `auth.providers.guest.dangerouslyAllowOutsideDevelopment: true`, which keeps the auth subsystem active and provides a real `user:default/guest` identity. Production uses GitHub OAuth via `values-prod.yaml`.
 - Removing `kube-rbac-proxy` sidecar restores functionality quickly in local lab but reduces metrics endpoint hardening.
 - Branch protection currently allows bypass by admin identity; this weakens strict GitOps governance guarantees.
 
@@ -361,11 +361,11 @@ Expected:
 6. Inference request returns predictions.
 
 ## Hardening Backlog (Post-Week 3)
-1. Replace dev auth bypass with proper Backstage auth provider and sign-in policy.
-2. Restore secure metrics proxy approach for KServe controller (use verified reachable image mirror).
-3. Enforce strict branch protection with no personal bypass on `main`.
-4. Add CI checks for required Backstage config keys (`app.title`, base URLs).
-5. Add synthetic smoke test that runs template and verifies `InferenceService` readiness automatically.
+1. ✅ Replace dev auth bypass with proper Backstage auth provider and sign-in policy. _(DONE in Milestone F: `dangerouslyDisableDefaultAuthPolicy: true` replaced by guest provider `dangerouslyAllowOutsideDevelopment: true`; production path uses GitHub OAuth in `values-prod.yaml`.)_
+2. ⏳ Restore secure metrics proxy approach for KServe controller (use verified reachable image mirror). _(Still pending — `kube-rbac-proxy` sidecar remains removed; no accessible image mirror confirmed yet. See `docs/PROJECT_MEMORY.md` section 7.)_
+3. ✅ Enforce strict branch protection with no personal bypass on `main`. _(DONE in Milestone F.)_
+4. ✅ Add CI checks for required Backstage config keys (`app.title`, base URLs). _(Addressed via `scripts/ci/render_backstage.sh` which renders the full Helm chart output and validates the resulting Deployment spec in CI.)_
+5. ✅ Add synthetic smoke test that runs template and verifies `InferenceService` readiness automatically. _(DONE: `scripts/smoke-test.sh` validates all milestone contracts including InferenceService readiness, Backstage availability, and Golden Path evidence end-to-end.)_
 
 ## Defense Drill (Explain Clearly)
 - Why app-of-apps + per-endpoint child app was chosen.

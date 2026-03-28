@@ -8,6 +8,8 @@
 
 Milestone C goal: a developer fills in a Backstage form, the platform opens a GitHub PR with two files, the PR is merged, ArgoCD deploys a new `InferenceService`, and the endpoint responds to a prediction request.
 
+> **Milestone F update:** In the original Milestone C design the PR contained two files: `apps/<name>/inference-service.yaml` and `infrastructure/apps/<name>-app.yaml`. The second file was eliminated in Milestone F when the `neuroscale-model-endpoints` ApplicationSet was introduced. The ApplicationSet auto-discovers every directory under `apps/` and creates the ArgoCD Application automatically, so no per-app registration file is needed. The overall flow (form → PR → merge → deploy → Ready) is unchanged; only the number of files in the PR changed from two to one.
+
 The demo contract end-to-end:
 
 ```
@@ -236,10 +238,10 @@ This failure is subtle because `kubectl describe secret` shows the key exists an
 
 ### Symptom
 
-The Backstage scaffolder created a PR with the correct two files:
+The Backstage scaffolder created a PR with the correct two files (as designed at the time):
 
 - `apps/demo-iris-2/inference-service.yaml`
-- `infrastructure/apps/demo-iris-2-app.yaml`
+- `infrastructure/apps/demo-iris-2-app.yaml` _(removed in Milestone F — the `neuroscale-model-endpoints` ApplicationSet now auto-discovers `apps/*` directories; per-app Application files are no longer generated or required)_
 
 The PR passed CI checks and was merged. ArgoCD detected the new `demo-iris-2-app.yaml` and created the child Application. But the child app immediately showed `OutOfSync/Degraded`:
 
