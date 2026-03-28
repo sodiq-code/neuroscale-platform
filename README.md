@@ -402,7 +402,7 @@ neuroscale-platform/
 |   |-- CLOUD_PROMOTION_GUIDE.md            # Phase-by-phase EKS/GKE promotion guide
 |   |-- MILESTONE_A_POSTMORTEM.md           # GitOps spine: incidents + design decisions
 |   |-- MILESTONE_B_POSTMORTEM.md           # KServe: incidents + design decisions
-|   |-- WEEK_3_GOLDEN_PATH_CONTRACT.md      # Operational runbook + defense drills
+|   |-- MILESTONE_C_POSTMORTEM.md           # Golden Path: contract, incidents, runbook (Milestone C)
 |   |-- REALITY_CHECK_MILESTONE_1_GITOPS_SPINE.md
 |   |-- REALITY_CHECK_MILESTONE_2_KSERVE_SERVING.md
 |   |-- REALITY_CHECK_MILESTONE_3_GOLDEN_PATH.md
@@ -620,7 +620,7 @@ Full incident postmortem for the Backstage CrashLoopBackOff: [infrastructure/INC
 
 ## 9. Operational Runbook: ArgoCD Sync Recovery, KServe Restart, and Backstage Token Refresh
 
-See `docs/WEEK_3_GOLDEN_PATH_CONTRACT.md` for the full runbook.
+See `docs/MILESTONE_C_POSTMORTEM.md` for the full runbook.
 
 **Common recovery commands:**
 

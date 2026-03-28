@@ -399,7 +399,7 @@ kubectl -n backstage exec deploy/neuroscale-backstage -- sh -c 'echo ${#GITHUB_T
 
 ## See Also
 
-- `docs/WEEK_3_GOLDEN_PATH_CONTRACT.md` — full implementation contract and runbook
+- `docs/MILESTONE_C_POSTMORTEM.md` — full implementation contract and runbook
 - `infrastructure/INCIDENT_BACKSTAGE_CRASHLOOP_RCA.md` — detailed RCA for the CrashLoopBackOff
 - `backstage/templates/model-endpoint/template.yaml` — the Golden Path template
 - `infrastructure/backstage/values.yaml` — Backstage Helm configuration

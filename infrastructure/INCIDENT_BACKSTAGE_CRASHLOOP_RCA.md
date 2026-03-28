@@ -146,7 +146,7 @@ This overlap is expected and can look like a persistent failure if only watching
 ## 10) Follow-up Tasks
 
 - [x] Add CI validation for rendered manifest probes/resources — implemented via `scripts/ci/render_backstage.sh` + `guardrails-checks.yaml`, which renders the Backstage Helm chart and validates the resulting Deployment spec.
-- [x] Add GitOps runbook section to infrastructure docs — implemented in `docs/WEEK_3_GOLDEN_PATH_CONTRACT.md` (Operational Runbook section).
+- [x] Add GitOps runbook section to infrastructure docs — implemented in `docs/MILESTONE_C_POSTMORTEM.md` (Operational Runbook section).
 - [x] Add policy/check preventing dependency mis-nesting regressions — `render_backstage.sh` renders the full chart and captures probe/resource values in CI, catching Helm values nesting errors before merge.
 - [x] Consider separate values profiles (`dev`, `staging`, `prod`) with explicit probe defaults — implemented in Milestone F: `infrastructure/backstage/values.yaml` (dev, guest auth, 1 replica) and `infrastructure/backstage/values-prod.yaml` (prod, GitHub OAuth, 2 replicas) with explicit probe thresholds in both.
 
