@@ -80,6 +80,8 @@ The 2026 platform engineering pain signals this repo directly addresses:
 
 ## 2. Architecture: Control Plane and Data Plane
 
+> All diagrams in this README use **Mermaid** — they render natively on GitHub, stay version-controlled alongside the code, and are easy to update in the same PR as a code change. For guidance on when to use Mermaid vs a real diagram image vs ASCII art, see [`docs/ARCHITECTURE_DIAGRAM_GUIDE.md`](docs/ARCHITECTURE_DIAGRAM_GUIDE.md).
+
 ### Component interaction diagram
 
 ```mermaid
