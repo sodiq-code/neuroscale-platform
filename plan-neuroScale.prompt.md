@@ -24,20 +24,20 @@ Build a **B2B SaaS-grade Internal Developer Platform** that lets a developer dep
 - Evidence over claims: every feature should have a failing demo case and a passing demo case
 
 **Repo Deliverables (Checklist)**
-- [ ] `README` that explains: what this platform solves, quickstart, and the 3-minute demo flow
-- [ ] “Demo script” doc (exact steps + expected outputs)
-- [ ] Backstage scaffolder template: click → PR → merge → Argo deploy
-- [ ] GitHub auth for scaffolder documented and demo-safe (GitHub App or fine-grained PAT) + credentials wired via Kubernetes Secret
-- [ ] GitOps apps automation (ApplicationSet preferred) so new folders under `apps/` deploy automatically
-- [ ] GitHub Actions PR checks:
-   - [ ] `helm template` / rendered-manifest validation for charts
-   - [ ] Kubernetes schema validation for YAML
-   - [ ] Kyverno policy tests against rendered manifests
-- [ ] One deterministic CI entrypoint script (render → validate → policy test) so failures are easy to debug
-- [ ] Kyverno policy pack (owner/costCenter, requests/limits, deny `:latest`, baseline security)
-- [ ] FinOps primitives (required labels + ResourceQuota/LimitRange + PR resource-delta “cost proxy” comment)
-- [ ] KServe install layer captured in-repo and GitOps-managed (not “run this script manually”)
-- [ ] Incident-proofing note tying the CI checks back to your RCA learnings
+- [x] `README` that explains: what this platform solves, quickstart, and the 3-minute demo flow
+- [x] “Demo script” doc (exact steps + expected outputs)
+- [x] Backstage scaffolder template: click → PR → merge → Argo deploy
+- [x] GitHub auth for scaffolder documented and demo-safe (GitHub App or fine-grained PAT) + credentials wired via Kubernetes Secret
+- [x] GitOps apps automation (ApplicationSet preferred) so new folders under `apps/` deploy automatically
+- [x] GitHub Actions PR checks:
+   - [x] `helm template` / rendered-manifest validation for charts
+   - [x] Kubernetes schema validation for YAML
+   - [x] Kyverno policy tests against rendered manifests
+- [x] One deterministic CI entrypoint script (render → validate → policy test) so failures are easy to debug
+- [x] Kyverno policy pack (owner/costCenter, requests/limits, deny `:latest`, baseline security)
+- [x] FinOps primitives (required labels + ResourceQuota/LimitRange + PR resource-delta “cost proxy” comment)
+- [x] KServe install layer captured in-repo and GitOps-managed (not “run this script manually”)
+- [x] Incident-proofing note tying the CI checks back to your RCA learnings
 
 **Steps**
 1. Define the “North Star Demo” and the artifacts you must be able to defend

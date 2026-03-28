@@ -519,7 +519,8 @@ kubectl -n backstage rollout restart deploy/neuroscale-backstage
 | "How can I verify the platform works on my laptop?" | `scripts/bootstrap.sh` + `scripts/smoke-test.sh` + `scripts/port-forward-all.sh` |
 | "How do you scale from 3 models to 300?" | ApplicationSet in `infrastructure/apps/model-endpoints-appset.yaml` — zero GitOps boilerplate per model |
 | "What's different between dev and prod Backstage?" | `infrastructure/backstage/values.yaml` vs `values-prod.yaml` — replicas, auth provider, limits, probe thresholds |
+| "How would you promote this to a real cloud cluster?" | `docs/CLOUD_PROMOTION_GUIDE.md` — phase-by-phase: EKS/GKE Terraform, ArgoCD bootstrap, ingress swap, wildcard DNS, TLS (cert-manager or ACM), production Backstage, OpenCost billing API |
 
 ---
 
-> **Note:** This repo is optimized for local k3d demos. Production parity additions (Ingress TLS, scale-to-zero tuning, multi-namespace isolation) are documented in `plan-neuroScale.prompt.md` and `docs/REALITY_CHECK_MILESTONE_6_PRODUCTION_HARDENING.md`.
+> **Note:** This repo runs on local k3d (zero-cost, fully reproducible). The cloud promotion path — EKS/GKE Terraform, ingress swap, DNS, TLS, production Backstage — is documented step-by-step in [`docs/CLOUD_PROMOTION_GUIDE.md`](docs/CLOUD_PROMOTION_GUIDE.md). The application manifests require no changes to run on a cloud cluster; only the cluster and network layer changes.

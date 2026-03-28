@@ -52,11 +52,11 @@ The second file was purely mechanical and had no decision content. When the Back
 
 The ApplicationSet generator pattern uses the Git directory listing of `apps/*` as the authoritative list. ArgoCD creates or deletes child Applications automatically when folders appear or disappear in Git. No manual registration step remains.
 
-### Trade-off: Backstage scaffolder template not yet updated
+### ✅ Backstage scaffolder template updated (backlog item resolved)
 
-The Golden Path scaffolder template still generates `infrastructure/apps/<name>-app.yaml` as its second file. This file lands in `infrastructure/apps/` where the root app watches, so it creates a *redundant* child Application alongside the ApplicationSet-generated one. Both Applications point at the same source and produce the same result; only one is needed.
+The Golden Path scaffolder template previously generated `infrastructure/apps/<name>-app.yaml` as a second file alongside the `InferenceService` manifest. This file landed in `infrastructure/apps/` where the root app watched, creating a *redundant* child Application alongside the ApplicationSet-generated one. Both Applications pointed at the same source; only one was needed.
 
-**Resolution path:** Update the Backstage template skeleton to emit only `apps/<name>/inference-service.yaml` and drop the Application file. This is a backlog item — it does not affect correctness, only creates a cosmetic duplicate Application in ArgoCD.
+**Status: RESOLVED.** The `infrastructure/apps/<name>-app.yaml` skeleton file was removed from the scaffolder template. The template now emits only `apps/<name>/inference-service.yaml`. The ApplicationSet auto-discovers the new directory and creates the ArgoCD Application automatically — no per-app registration file is required.
 
 ---
 
