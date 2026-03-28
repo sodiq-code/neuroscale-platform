@@ -31,7 +31,8 @@ The 2026 platform engineering pain signals this repo directly addresses:
 | Complexity / cognitive load | Developers shouldn't need Kubernetes expertise to deploy a model | Backstage Golden Path template — one form, one PR |
 | Reliability / drift | Manual cluster changes break overnight | ArgoCD GitOps — Git is the source of truth; drift is auto-corrected |
 | Governance & security | Unsafe configs reach production | Kyverno admission policies + CI policy simulation |
-| Cost waste | No resource bounds = unbounded spend | Required requests/limits + `owner`/`cost-center` labels enforced before merge |
+| Cost waste | No resource bounds = unbounded spend | Required requests/limits + `owner`/`cost-center` labels enforced before merge + live OpenCost showback |
+| Scale friction | Adding a new service requires editing GitOps boilerplate | ApplicationSet auto-discovers new model folders — zero registration overhead |
 
 ---
 
@@ -45,19 +46,20 @@ The 2026 platform engineering pain signals this repo directly addresses:
 |     v                                                                            |
 |  Backstage (Golden Path UI)                                                      |
 |  - Template form (name, modelFormat, storageUri)                                 |
-|  - Scaffolder: opens PR to GitHub with two files                                 |
+|  - Scaffolder: opens PR to GitHub with one file:                                 |
 |      apps/<name>/inference-service.yaml                                          |
-|      infrastructure/apps/<name>-app.yaml                                         |
 |                                                                                  |
 |  GitHub Pull Request                                                             |
 |  - CI: kubeconform schema validation                                             |
 |  - CI: Kyverno policy simulation against rendered manifests                      |
+|  - CI: resource-delta comment (CPU/memory requested by changed manifests)        |
 |  - PR blocked if labels, resources, or image tag rules are violated              |
 |                                                                                  |
 |  ArgoCD (GitOps reconciler)                                                      |
 |  - Root app-of-apps: bootstrap/root-app.yaml                                    |
 |  - Watches: infrastructure/apps/ for child Application manifests                 |
-|  - On merge: detects new <name>-app.yaml -> creates child Application            |
+|  - ApplicationSet: auto-discovers apps/* → creates child Application per folder  |
+|  - On merge: new folder detected → child Application created automatically       |
 |  - Syncs apps/<name>/inference-service.yaml to cluster                           |
 |  - Self-heals drift: any manual kubectl change is reverted automatically         |
 |                                                                                  |
@@ -65,6 +67,16 @@ The 2026 platform engineering pain signals this repo directly addresses:
 |  - Blocks InferenceService without owner + cost-center labels                    |
 |  - Blocks Deployment without CPU/memory requests + limits                        |
 |  - Blocks :latest image tags on Deployments                                      |
+|  - Blocks Deployments with containers running as root (runAsNonRoot: true)       |
+|                                                                                  |
+|  Namespace Governance                                                            |
+|  - ResourceQuota caps aggregate CPU/memory/pod count in default namespace        |
+|  - LimitRange injects per-container default bounds                               |
+|                                                                                  |
+|  OpenCost (Cost Showback)                                                        |
+|  - Reads owner + cost-center labels from Prometheus metrics                      |
+|  - Produces per-team cost breakdowns in real time                                |
+|  - Dashboard at http://localhost:9090 (via port-forward)                         |
 |                                                                                  |
 +----------------------------------------------------------------------------------+
 
@@ -95,20 +107,20 @@ The 2026 platform engineering pain signals this repo directly addresses:
 
 ### 3.1 GitOps: How Deployments Are Triggered
 
-GitOps in NeuroScale is implemented with **ArgoCD app-of-apps**. There is one root Application (`bootstrap/root-app.yaml`) that watches `infrastructure/apps/`. Every file in that directory is itself an ArgoCD Application targeting a specific folder in the repo.
+GitOps in NeuroScale is implemented with **ArgoCD app-of-apps + ApplicationSet**. There is one root Application (`bootstrap/root-app.yaml`) that watches `infrastructure/apps/`. That directory contains both static Application manifests for platform infrastructure and one `ApplicationSet` that auto-discovers model endpoint folders.
 
-**Trigger chain:**
+**Trigger chain (new model deployment):**
 
 ```
-Git commit to main
+Developer merges PR containing apps/<name>/inference-service.yaml
        |
        v
-ArgoCD root app polls infrastructure/apps/
+ArgoCD neuroscale-model-endpoints ApplicationSet polls apps/
        |
-       +-> Detects new <name>-app.yaml
+       +-> Detects new <name>/ directory
        |         |
        |         v
-       |   Creates child Application object in-cluster
+       |   Creates child Application object in-cluster automatically
        |         |
        |         v
        |   Child app syncs apps/<name>/inference-service.yaml
@@ -118,11 +130,11 @@ ArgoCD root app polls infrastructure/apps/
             Any manual drift (kubectl delete, kubectl edit) is reverted.
 ```
 
-**Key design decision — why app-of-apps instead of a monolithic sync:**
+**Key design decision — why ApplicationSet instead of per-app Application files:**
 
-- Each child app has an independent sync window, rollback boundary, and health check.
-- A broken `InferenceService` YAML does not block unrelated platform components from syncing.
-- Blast radius is explicitly bounded per service.
+- Previously each new model required a manual `infrastructure/apps/<name>-app.yaml` file. This was purely mechanical boilerplate.
+- The ApplicationSet replaces all those files. Drop a folder under `apps/`, and ArgoCD discovers and deploys it automatically.
+- The platform scales to hundreds of services without any GitOps layer changes.
 
 **Automated sync settings** (from `bootstrap/root-app.yaml`):
 
@@ -141,7 +153,7 @@ Backstage serves two functions in NeuroScale:
 
 **a) Service Catalog** — every deployed inference service is a cataloged Component with ownership metadata. The `owner` and `cost-center` labels required by Kyverno feed directly into catalog attribution.
 
-**b) Golden Path Scaffolder** — the `KServe model endpoint` template at `backstage/templates/model-endpoint/template.yaml` generates the two files required by the GitOps pipeline:
+**b) Golden Path Scaffolder** — the `KServe model endpoint` template at `backstage/templates/model-endpoint/template.yaml` generates the file required by the GitOps pipeline:
 
 ```
 User fills form in Backstage
@@ -149,16 +161,21 @@ User fills form in Backstage
         v
 Scaffolder publishes PR to GitHub containing:
   apps/<name>/inference-service.yaml          <- KServe manifest, labels, resources
-  infrastructure/apps/<name>-app.yaml         <- ArgoCD Application pointing to apps/<name>
         |
         v
-CI runs on the PR (kubeconform + Kyverno simulation)
+CI runs on the PR (kubeconform + Kyverno simulation + resource-delta comment)
         |
         v
 Human reviews and merges PR
         |
         v
-ArgoCD detects new child app file -> deploys -> InferenceService becomes Ready
+ArgoCD ApplicationSet detects new apps/<name>/ folder
+        |
+        v
+ApplicationSet creates child Application automatically
+        |
+        v
+InferenceService becomes Ready; OpenCost begins attributing cost to owner/team
 ```
 
 **The critical non-obvious piece:** Backstage is *not* the deployment engine. It is the UX that generates Git artifacts. ArgoCD is the deployment engine. This separation means Backstage can be down without affecting running inference endpoints.
@@ -198,21 +215,35 @@ neuroscale-platform/
 |
 |-- infrastructure/
 |   |-- apps/                            # ArgoCD child Application manifests
-|   |   |-- backstage-app.yaml
-|   |   |-- serving-stack-app.yaml
-|   |   |-- kserve-runtimes-app.yaml
-|   |   |-- policy-guardrails-app.yaml
-|   |   |-- ai-model-alpha-app.yaml
-|   |   |-- demo-iris-2-app.yaml
-|   |   +-- test-app-app.yaml
+|   |   |-- model-endpoints-appset.yaml  # ApplicationSet: auto-discovers apps/* folders
+|   |   |-- backstage-app.yaml           # Backstage (Helm, dev profile)
+|   |   |-- serving-stack-app.yaml       # KServe + Knative + Kourier install
+|   |   |-- kserve-runtimes-app.yaml     # ClusterServingRuntime definitions
+|   |   |-- policy-guardrails-app.yaml   # Kyverno + policies (sync-wave 20)
+|   |   |-- default-namespace-resources-app.yaml  # ResourceQuota + LimitRange (wave 5)
+|   |   +-- opencost-app.yaml            # OpenCost cost showback (sync-wave 30)
 |   |-- backstage/
 |   |   |-- Chart.yaml                   # Helm chart wrapper for Backstage
-|   |   +-- values.yaml                  # Probe tuning, resource bounds, config injection
+|   |   |-- values.yaml                  # Dev profile: guest auth, 1 replica, loose limits
+|   |   +-- values-prod.yaml             # Prod profile: GitHub OAuth, 2 replicas, hard limits
 |   |-- kserve/
 |   |   +-- sklearn-runtime.yaml         # ClusterServingRuntime (sklearn)
 |   |-- kyverno/
 |   |   |-- kyverno-install-v1.12.5.yaml
-|   |   +-- policies/                    # Admission + audit policies
+|   |   +-- policies/                    # Admission + audit policies (5 ClusterPolicies)
+|   |       |-- require-standard-labels-inferenceservice.yaml
+|   |       |-- require-standard-labels-deployment.yaml
+|   |       |-- require-resource-requests-limits.yaml
+|   |       |-- disallow-latest-image-tag.yaml
+|   |       +-- disallow-root-containers.yaml  # (Milestone F) runAsNonRoot enforced
+|   |-- namespaces/
+|   |   +-- default/                     # (Milestone F) ResourceQuota + LimitRange
+|   |       |-- resource-quota.yaml
+|   |       |-- limit-range.yaml
+|   |       +-- kustomization.yaml
+|   |-- opencost/                        # (Milestone F) OpenCost cost showback
+|   |   |-- Chart.yaml
+|   |   +-- values.yaml
 |   |-- serving-stack/
 |   |   |-- kustomization.yaml           # cert-manager + Knative + Kourier + KServe install
 |   |   +-- patches/                     # Istio->Kourier config, kube-rbac-proxy removal
@@ -228,7 +259,8 @@ neuroscale-platform/
 |
 |-- scripts/
 |   |-- bootstrap.sh                     # One-shot cluster setup (any laptop → running platform)
-|   |-- smoke-test.sh                    # Colour-coded end-to-end smoke test (all 4 milestones)
+|   |-- smoke-test.sh                    # Colour-coded end-to-end smoke test (all 6 milestones)
+|   |-- port-forward-all.sh              # Open all UIs in one command (ArgoCD + Backstage + OpenCost + Kourier)
 |   +-- ci/
 |       +-- render_backstage.sh          # Renders Backstage Helm chart for schema validation
 |
@@ -246,7 +278,8 @@ neuroscale-platform/
 |   |-- REALITY_CHECK_MILESTONE_2_KSERVE_SERVING.md
 |   |-- REALITY_CHECK_MILESTONE_3_GOLDEN_PATH.md
 |   |-- REALITY_CHECK_MILESTONE_4_GUARDRAILS.md
-|   +-- REALITY_CHECK_MILESTONE_5_COST_PROXY.md
+|   |-- REALITY_CHECK_MILESTONE_5_COST_PROXY.md
+|   +-- REALITY_CHECK_MILESTONE_6_PRODUCTION_HARDENING.md
 |
 |-- plan-neuroScale.prompt.md
 +-- README.md
@@ -263,6 +296,7 @@ neuroscale-platform/
 | **C** | Golden Path: Backstage creates PR -> merge -> ArgoCD deploys -> InferenceService Ready | Done |
 | **D** | Guardrails: Kyverno admission + PR-time CI policy simulation (false-green fixed) | Done |
 | **E** | Cost proxy + portability: resource-delta PR comment, bootstrap script, visual smoke test | Done |
+| **F** | Production hardening: ApplicationSet, non-root policy, namespace quotas, OpenCost, multi-env Backstage, guest auth, port-forward-all | Done |
 
 ---
 
@@ -294,7 +328,7 @@ kubectl config use-context k3d-neuroscale
 ### Verify the platform is healthy
 
 ```bash
-# Run the colour-coded smoke test (tests all 4 milestones):
+# Run the colour-coded smoke test (tests all 6 milestones):
 bash scripts/smoke-test.sh
 
 # Skip the destructive drift test for a quick sanity check:
@@ -308,19 +342,36 @@ kubectl get nodes
 kubectl -n argocd get applications.argoproj.io
 kubectl -n kserve get deploy,pods
 kubectl -n default get inferenceservices.serving.kserve.io
+kubectl -n default get resourcequota,limitrange
+kubectl get clusterpolicies
 ```
 
-### Open required tunnels
+### Open all UIs at once (new in Milestone F)
+
+```bash
+# Opens ArgoCD + Backstage + OpenCost + Kourier in one command:
+bash scripts/port-forward-all.sh
+```
+
+This starts all four port-forwards as background processes and prints a URL table with credentials. Press Ctrl+C to stop all tunnels.
+
+### Open required tunnels (individually)
 
 ```bash
 # Terminal 1 -- ArgoCD UI
 kubectl port-forward svc/argocd-server -n argocd 8081:443
+# Open: https://localhost:8081
 
-# Terminal 2 -- Inference gateway (Kourier)
-kubectl -n kourier-system port-forward svc/kourier 8082:80
-
-# Terminal 3 -- Backstage portal
+# Terminal 2 -- Backstage portal
 kubectl -n backstage port-forward svc/neuroscale-backstage 7010:7007
+# Open: http://localhost:7010
+
+# Terminal 3 -- OpenCost cost dashboard
+kubectl -n opencost port-forward svc/opencost-ui 9090:9090
+# Open: http://localhost:9090
+
+# Terminal 4 -- Inference gateway (Kourier)
+kubectl -n kourier-system port-forward svc/kourier 8082:80
 ```
 
 ### Demo: GitOps drift self-heal (Milestone A)
@@ -384,6 +435,7 @@ EOF
 | C — Golden Path | [docs/REALITY_CHECK_MILESTONE_3_GOLDEN_PATH.md](docs/REALITY_CHECK_MILESTONE_3_GOLDEN_PATH.md) | Backstage CrashLoopBackOff (Helm values mis-nesting); blank `/create/actions` (401 on scaffolder); PR merged but app stayed OutOfSync |
 | D — Guardrails | [docs/REALITY_CHECK_MILESTONE_4_GUARDRAILS.md](docs/REALITY_CHECK_MILESTONE_4_GUARDRAILS.md) | InferenceService CRD removed by patch; Kyverno label name mismatch; CI policy simulation false-green (fixed in Milestone E) |
 | E — Cost Proxy + Portability | [docs/REALITY_CHECK_MILESTONE_5_COST_PROXY.md](docs/REALITY_CHECK_MILESTONE_5_COST_PROXY.md) | CI false-green root cause + fix; cost proxy design trade-offs; bootstrap script decisions |
+| F — Production Hardening | [docs/REALITY_CHECK_MILESTONE_6_PRODUCTION_HARDENING.md](docs/REALITY_CHECK_MILESTONE_6_PRODUCTION_HARDENING.md) | ApplicationSet design; namespace quota reasoning; OpenCost label strategy; multi-env Backstage values; guest auth vs disabled auth |
 
 Full incident postmortem for the Backstage CrashLoopBackOff: [infrastructure/INCIDENT_BACKSTAGE_CRASHLOOP_RCA.md](infrastructure/INCIDENT_BACKSTAGE_CRASHLOOP_RCA.md)
 
@@ -395,16 +447,27 @@ Full incident postmortem for the Backstage CrashLoopBackOff: [infrastructure/INC
 
 | Policy | What It Blocks | Business Reason |
 |--------|---------------|-----------------|
-| `require-standard-labels-inferenceservice` | InferenceService without `owner` + `cost-center` labels | Cost attribution is impossible without ownership metadata |
+| `require-standard-labels-inferenceservice` | InferenceService without `owner` + `cost-center` labels | Cost attribution is impossible without ownership metadata; OpenCost relies on these labels |
+| `require-standard-labels-deployment` | Deployment without `owner` + `cost-center` labels | Same attribution requirement for non-inference workloads |
 | `require-resource-requests-limits` | Deployment without CPU/memory requests and limits | Unbounded resources cause node contention and unpredictable cost |
 | `disallow-latest-image-tag` | Deployment with `:latest` image | Non-reproducible rollouts; breaks rollback guarantees |
+| `disallow-root-containers` | Deployment containers without `runAsNonRoot: true` | Container breakout from root containers can escalate to host access |
+
+### Namespace-level governance (ResourceQuota + LimitRange)
+
+| Resource | Request cap | Limit cap | Reason |
+|----------|------------|-----------|--------|
+| CPU (aggregate) | 4 cores | 8 cores | Prevents unbounded consumption on a shared cluster |
+| Memory (aggregate) | 8 Gi | 16 Gi | Prevents OOM cascades across all namespaced workloads |
+| Pods | — | 20 | Bounds KServe's hidden pod proliferation (1 ISVC → ~5 pods) |
+| InferenceServices | — | 5 | Bounds total active model endpoints in default namespace |
 
 ### PR-time enforcement (CI)
 
 | Check | Tool | What It Catches |
 |-------|------|----------------|
 | Schema validation | `kubeconform` | Malformed YAML, wrong API versions, missing required fields |
-| Policy simulation | `kyverno-cli apply` + stdout check | Policy violations against actual rendered manifests before merge (exit-code-only check was a false-green; now uses dual exit-code + stdout check) |
+| Policy simulation | `kyverno-cli apply` + stdout check | Policy violations against actual rendered manifests before merge (dual exit-code + stdout check guards against false-greens) |
 | Helm rendering | `helm template` + `render_backstage.sh` | Helm values hierarchy bugs (the exact failure class from the Backstage RCA) |
 | Resource delta | Python + PyYAML | CPU/memory requests in changed `apps/` manifests; posts as PR comment and GitHub Actions job summary |
 
@@ -443,16 +506,20 @@ kubectl -n backstage rollout restart deploy/neuroscale-backstage
 
 | Question | Where to Point |
 |----------|---------------|
-| "Walk me through the GitOps flow" | Section 3.1 + `bootstrap/root-app.yaml` |
+| "Walk me through the GitOps flow" | Section 3.1 + `bootstrap/root-app.yaml` + `infrastructure/apps/model-endpoints-appset.yaml` |
 | "How does Backstage trigger a deployment?" | Section 3.2 + `backstage/templates/model-endpoint/template.yaml` |
 | "How does KServe handle a request?" | Section 3.3 + `infrastructure/kserve/sklearn-runtime.yaml` |
 | "How do you prevent bad configs from reaching prod?" | Section 8 + `infrastructure/kyverno/policies/` |
+| "How do you prevent containers running as root?" | `infrastructure/kyverno/policies/disallow-root-containers.yaml` |
+| "How do you prevent runaway resource consumption?" | `infrastructure/namespaces/default/resource-quota.yaml` + `limit-range.yaml` |
+| "How do you attribute costs to teams?" | `owner`/`cost-center` labels enforced by Kyverno + OpenCost dashboard at localhost:9090 |
 | "Show me a real incident you've debugged" | `infrastructure/INCIDENT_BACKSTAGE_CRASHLOOP_RCA.md` |
 | "What failed and what did you learn?" | `docs/REALITY_CHECK_MILESTONE_*.md` |
-| "How does cost attribution work?" | Kyverno `require-standard-labels` policy + `cost-center` label requirement + CI resource-delta PR comment |
 | "Why Kourier instead of Istio?" | Section 3.3 + `docs/REALITY_CHECK_MILESTONE_2_KSERVE_SERVING.md` |
-| "How can I verify the platform works on my laptop?" | `scripts/bootstrap.sh` + `scripts/smoke-test.sh` |
+| "How can I verify the platform works on my laptop?" | `scripts/bootstrap.sh` + `scripts/smoke-test.sh` + `scripts/port-forward-all.sh` |
+| "How do you scale from 3 models to 300?" | ApplicationSet in `infrastructure/apps/model-endpoints-appset.yaml` — zero GitOps boilerplate per model |
+| "What's different between dev and prod Backstage?" | `infrastructure/backstage/values.yaml` vs `values-prod.yaml` — replicas, auth provider, limits, probe thresholds |
 
 ---
 
-> **Note:** This repo is optimized for local k3d demos. Production parity additions (Ingress TLS, scale-to-zero tuning, multi-namespace isolation, Terraform cost proxy) are documented as the post-Week-4 backlog in `plan-neuroScale.prompt.md`.
+> **Note:** This repo is optimized for local k3d demos. Production parity additions (Ingress TLS, scale-to-zero tuning, multi-namespace isolation) are documented in `plan-neuroScale.prompt.md` and `docs/REALITY_CHECK_MILESTONE_6_PRODUCTION_HARDENING.md`.
