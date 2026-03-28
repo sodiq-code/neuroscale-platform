@@ -547,3 +547,65 @@ kubectl -n backstage rollout restart deploy/neuroscale-backstage
 ---
 
 > **Note:** This repo runs on local k3d (zero-cost, fully reproducible). The cloud promotion path — EKS/GKE Terraform, ingress swap, DNS, TLS, production Backstage — is documented step-by-step in [`docs/CLOUD_PROMOTION_GUIDE.md`](docs/CLOUD_PROMOTION_GUIDE.md). The application manifests require no changes to run on a cloud cluster; only the cluster and network layer changes.
+
+---
+
+## 11. GitHub Topics & Repository Discoverability
+
+### Recommended topics for this repository
+
+The following topics accurately reflect what is built and documented here. Add them via
+**Settings → About (gear icon) → Topics**:
+
+```
+kubernetes kserve backstage gitops argocd platform-engineering mlops kyverno opencost technical-writing
+```
+
+**Why each topic is earned, not aspirational:**
+
+| Topic | Evidence in this repo |
+|-------|----------------------|
+| `kubernetes` | All workloads are Kubernetes-native (InferenceServices, Deployments, ResourceQuotas, Namespaces) |
+| `kserve` | `infrastructure/kserve/`, `apps/*/inference-service.yaml`, Milestone B fully verified |
+| `backstage` | `backstage/templates/model-endpoint/`, `infrastructure/backstage/`, Helm wrapper with dev + prod values |
+| `gitops` | ArgoCD root app-of-apps (`bootstrap/root-app.yaml`), self-healing drift control, Milestone A verified |
+| `argocd` | `infrastructure/apps/*.yaml`, ApplicationSet auto-discovery, Milestone F verified |
+| `platform-engineering` | End-to-end platform: developer portal → GitOps → inference serving → cost attribution |
+| `mlops` | Self-service model endpoint lifecycle: scaffold → deploy → serve → monitor cost |
+| `kyverno` | 5 ClusterPolicies in `infrastructure/kyverno/policies/`, CI policy simulation, Milestone D verified |
+| `opencost` | `infrastructure/opencost/`, `owner`/`cost-center` label enforcement, Milestone E verified |
+| `technical-writing` | 11 documents across `docs/` including reality-check postmortems and a full incident RCA |
+
+> **Rule of thumb:** only add a topic if someone clicking it would immediately find that technology in the repo.
+> Keyword-stuffing topics that have no corresponding code or docs undermines credibility and wastes a
+> recruiter's time.
+
+---
+
+### Why the repository shows "100% Shell" on GitHub
+
+GitHub uses a tool called [Linguist](https://github.com/github/linguist) to detect languages and render
+the coloured language bar on a repository's main page.  Linguist splits file types into two categories:
+
+| Linguist category | Counted in language bar? | Examples in this repo |
+|-------------------|--------------------------|-----------------------|
+| **Programming language** | ✅ Yes | Shell (`.sh`) |
+| **Data / markup** | ❌ No (by default) | YAML (`.yaml`, `.yml`) |
+
+YAML is classified as a *data* language, so Linguist silently omits it from the bar even when it is the
+primary output artifact — which is exactly the situation here.  The four Shell scripts total ~34 KB; the
+custom Kubernetes manifests, ArgoCD apps, Helm values, and Kyverno policies total ~20–25 KB of
+handwritten YAML.
+
+A `.gitattributes` file has been added to this repository that sets `linguist-detectable=true` on all
+YAML files.  Once GitHub re-indexes the repository, the language bar will reflect a more representative
+split (approximately Shell 60% / YAML 40%).  The large upstream Kyverno operator install manifest
+(`infrastructure/kyverno/kyverno-install-v1.12.5.yaml`, ~3 MB of downloaded YAML) is marked
+`linguist-vendored=true` so that it does not inflate the YAML percentage.
+
+**Does "100% Shell" reduce the quality of the work? No.**  The language bar is a file-type summary,
+not an assessment of engineering depth.  The value in this repository is in the *architecture*: a
+working GitOps loop, a governed ML serving layer, policy-as-code, cost attribution, and a Golden Path
+developer experience — all verifiable with a single command (`bash scripts/smoke-test.sh`).  The Shell
+scripts are operational glue (bootstrap, smoke-test, port-forwarding) that exist *because* the platform
+is real and runnable, not despite it.
