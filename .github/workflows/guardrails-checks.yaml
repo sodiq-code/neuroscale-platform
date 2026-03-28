@@ -82,6 +82,15 @@ jobs:
 
           echo "Running Kyverno policy simulation against ${#app_files[@]} app manifests..."
 
+          # Build one --resource flag per file. kyverno-cli requires a separate
+          # --resource flag for each path; passing all paths after a single
+          # --resource flag silently ignores every path after the first, causing
+          # a false-green where only the first manifest is ever policy-checked.
+          resource_args=()
+          for f in "${app_files[@]}"; do
+            resource_args+=(--resource "$f")
+          done
+
           # Capture output and exit code separately.
           # kyverno-cli apply may exit 0 even when policy violations exist; we inspect
           # stdout as a second check to guard against the false-green described in
@@ -89,7 +98,7 @@ jobs:
           set +e
           docker run --rm -v "$PWD:/work" -w /work ghcr.io/kyverno/kyverno-cli:v1.12.5 \
             apply infrastructure/kyverno/policies/*.yaml \
-            --resource "${app_files[@]}" 2>&1 | tee /tmp/kyverno-output.txt
+            "${resource_args[@]}" 2>&1 | tee /tmp/kyverno-output.txt
           kyverno_exit="${PIPESTATUS[0]}"
           set -e
 
