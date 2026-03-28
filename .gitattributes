@@ -1,0 +1,13 @@
+# GitHub Linguist overrides
+#
+# By default, GitHub Linguist classifies YAML as a "data" language and excludes it
+# from the repository language bar, even when YAML is the primary output artifact
+# (Kubernetes manifests, ArgoCD applications, Helm values, Kyverno policies).
+# Setting linguist-detectable=true forces YAML to appear alongside Shell in the stats.
+
+*.yaml linguist-detectable=true
+*.yml  linguist-detectable=true
+
+# The kyverno operator install manifest is a downloaded upstream artifact (~3 MB),
+# not original code.  Mark it as vendored so it is excluded from language stats.
+infrastructure/kyverno/kyverno-install-v1.12.5.yaml linguist-vendored=true
