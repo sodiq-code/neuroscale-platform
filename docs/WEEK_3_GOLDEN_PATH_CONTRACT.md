@@ -30,13 +30,18 @@ Template: `KServe model endpoint`
 Backstage opens a PR against `main` with exactly:
 - `apps/<name>/inference-service.yaml`
   - `InferenceService` named `<name>` in namespace `default`
-- `infrastructure/apps/<name>-app.yaml`
-  - ArgoCD `Application` named `<name>` targeting `apps/<name>`
+
+Note: the earlier implementation also generated `infrastructure/apps/<name>-app.yaml`
+(an ArgoCD `Application` manifest). That file was removed in Milestone F when the
+`neuroscale-model-endpoints` ApplicationSet was introduced. The ApplicationSet
+auto-discovers every directory under `apps/` and creates the ArgoCD Application
+automatically — no per-app registration file is needed.
 
 ### Merge behavior
 After merge:
-- app-of-apps detects new child app under `infrastructure/apps/`
-- Argo sync applies `apps/<name>/inference-service.yaml`
+- `neuroscale-model-endpoints` ApplicationSet detects new `apps/<name>/` directory
+- ApplicationSet creates a child ArgoCD `Application` for `<name>` automatically
+- Child app syncs `apps/<name>/inference-service.yaml` to the cluster
 - KServe controllers reconcile and serve the endpoint
 
 ## Security and Access Model
