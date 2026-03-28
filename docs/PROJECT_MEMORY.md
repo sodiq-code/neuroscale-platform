@@ -34,6 +34,7 @@ Click template (Backstage) → PR created → merge → ArgoCD sync → KServe I
 - OpenCost Helm chart: infrastructure/opencost/{Chart.yaml,values.yaml}
 - Backstage dev values: infrastructure/backstage/values.yaml
 - Backstage prod values (GitHub OAuth, HA): infrastructure/backstage/values-prod.yaml
+- Cloud promotion guide (EKS/GKE Terraform, DNS, TLS): docs/CLOUD_PROMOTION_GUIDE.md
 
 ## 5) Decisions (keep these stable unless explicitly changed)
 - Demo-first: prioritize a reliable, repeatable demo loop over extra realism.
@@ -78,7 +79,7 @@ Click template (Backstage) → PR created → merge → ArgoCD sync → KServe I
 - Kyverno install can disrupt ArgoCD sync loop during initialization window; use webhookAnnotations patch.
 - Label key: always use cost-center (hyphen), not costCenter (camelCase).
 - Per-app Application files (ai-model-alpha-app.yaml, demo-iris-2-app.yaml, test-app-app.yaml) were replaced by model-endpoints-appset.yaml in Milestone F — do not recreate those individual files.
-- Golden Path scaffolder template still generates infrastructure/apps/<name>-app.yaml — update it when ApplicationSet is fully adopted (open backlog item).
+- ~~Golden Path scaffolder template still generates infrastructure/apps/<name>-app.yaml~~ — **FIXED**: skeleton file removed; template now only writes apps/<name>/inference-service.yaml and the ApplicationSet auto-discovers it.
 
 ## 8) Reality Check documentation (what actually failed)
 - Milestone A failures: docs/REALITY_CHECK_MILESTONE_1_GITOPS_SPINE.md
@@ -98,7 +99,11 @@ Click template (Backstage) → PR created → merge → ArgoCD sync → KServe I
 7. ✅ Namespace ResourceQuota + LimitRange for default namespace (infrastructure/namespaces/default/).
 8. ✅ Baseline security Kyverno policy: disallow-root-containers enforces runAsNonRoot on all Deployments in default namespace.
 
-## 10) Key new files added in post-milestone hardening
+## 10) Post-Milestone F clean-up (closed backlog items)
+1. ✅ Backstage scaffolder template aligned with ApplicationSet: removed `infrastructure/apps/<name>-app.yaml` from skeleton; PR body now correctly describes only `apps/<name>/inference-service.yaml`.
+2. ✅ Cloud promotion story documented: docs/CLOUD_PROMOTION_GUIDE.md covers EKS/GKE Terraform, ingress swap, DNS, TLS (cert-manager + ACM), production Backstage, and OpenCost billing integration.
+
+## 11) Key new files added in post-milestone hardening
 - ApplicationSet: infrastructure/apps/model-endpoints-appset.yaml
 - Non-root policy: infrastructure/kyverno/policies/disallow-root-containers.yaml
 - Namespace quotas: infrastructure/namespaces/default/{resource-quota,limit-range,kustomization}.yaml
@@ -106,3 +111,4 @@ Click template (Backstage) → PR created → merge → ArgoCD sync → KServe I
 - OpenCost chart: infrastructure/opencost/{Chart.yaml,values.yaml}
 - OpenCost app: infrastructure/apps/opencost-app.yaml
 - Backstage prod profile: infrastructure/backstage/values-prod.yaml
+- Cloud promotion guide: docs/CLOUD_PROMOTION_GUIDE.md
