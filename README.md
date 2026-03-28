@@ -60,7 +60,7 @@ $ bash scripts/smoke-test.sh
 7. [Reality Check Documentation](#7-reality-check-documentation)
 8. [Guardrails: What Gets Blocked and Why](#8-guardrails-what-gets-blocked-and-why)
 9. [Operational Runbook: ArgoCD Sync Recovery, KServe Restart, and Backstage Token Refresh](#9-operational-runbook-argocd-sync-recovery-kserve-restart-and-backstage-token-refresh)
-10. [Interview Defense: Mapping Platform Decisions to Production Engineering Signals](#10-interview-defense-mapping-platform-decisions-to-production-engineering-signals)
+10. [Platform Architecture: Key Design Decisions and Where They Live](#10-platform-architecture-key-design-decisions-and-where-they-live)
 
 ---
 
@@ -105,69 +105,32 @@ flowchart TD
     KS -->|"6. owner + cost-center labels\n→ Prometheus → per-team costs"| OC
 ```
 
-### ASCII detail: Control Plane and Data Plane
+### Mermaid detail: Control Plane and Data Plane
 
-```
-+--------------------------------- CONTROL PLANE ---------------------------------+
-|                                                                                  |
-|  Developer                                                                       |
-|     |                                                                            |
-|     v                                                                            |
-|  Backstage (Golden Path UI)                                                      |
-|  - Template form (name, modelFormat, storageUri)                                 |
-|  - Scaffolder: opens PR to GitHub with one file:                                 |
-|      apps/<name>/inference-service.yaml                                          |
-|                                                                                  |
-|  GitHub Pull Request                                                             |
-|  - CI: kubeconform schema validation                                             |
-|  - CI: Kyverno policy simulation against rendered manifests                      |
-|  - CI: resource-delta comment (CPU/memory requested by changed manifests)        |
-|  - PR blocked if labels, resources, or image tag rules are violated              |
-|                                                                                  |
-|  ArgoCD (GitOps reconciler)                                                      |
-|  - Root app-of-apps: bootstrap/root-app.yaml                                    |
-|  - Watches: infrastructure/apps/ for child Application manifests                 |
-|  - ApplicationSet: auto-discovers apps/* → creates child Application per folder  |
-|  - On merge: new folder detected → child Application created automatically       |
-|  - Syncs apps/<name>/inference-service.yaml to cluster                           |
-|  - Self-heals drift: any manual kubectl change is reverted automatically         |
-|                                                                                  |
-|  Kyverno (Admission Control)                                                     |
-|  - Blocks InferenceService without owner + cost-center labels                    |
-|  - Blocks Deployment without CPU/memory requests + limits                        |
-|  - Blocks :latest image tags on Deployments                                      |
-|  - Blocks Deployments with containers running as root (runAsNonRoot: true)       |
-|                                                                                  |
-|  Namespace Governance                                                            |
-|  - ResourceQuota caps aggregate CPU/memory/pod count in default namespace        |
-|  - LimitRange injects per-container default bounds                               |
-|                                                                                  |
-|  OpenCost (Cost Showback)                                                        |
-|  - Reads owner + cost-center labels from Prometheus metrics                      |
-|  - Produces per-team cost breakdowns in real time                                |
-|  - Dashboard at http://localhost:9090 (via port-forward)                         |
-|                                                                                  |
-+----------------------------------------------------------------------------------+
-
-+---------------------------------- DATA PLANE -----------------------------------+
-|                                                                                  |
-|  KServe Controller                                                               |
-|  - Watches InferenceService CRD                                                  |
-|  - Creates Knative Service + Revision + Route                                    |
-|                                                                                  |
-|  Knative Serving                                                                 |
-|  - Manages pod lifecycle for predictor containers                                |
-|  - Routes traffic by Host header via Kourier                                     |
-|                                                                                  |
-|  Kourier (Ingress Gateway)                                                       |
-|  - Lightweight Envoy-based ingress for Knative                                   |
-|  - Accepts inference requests on port 80                                         |
-|                                                                                  |
-|  Predictor Pod (sklearn, xgboost, etc.)                                          |
-|  - Runs ClusterServingRuntime (infrastructure/kserve/sklearn-runtime.yaml)       |
-|  - Serves /v1/models/<name>:predict                                              |
-|                                                                                  |
-+----------------------------------------------------------------------------------+
+```mermaid
+flowchart TB
+    subgraph CP["🔷 CONTROL PLANE"]
+        direction TB
+        Dev["Developer"]
+        BS["Backstage — Golden Path UI\nTemplate form: name · modelFormat · storageUri\nScaffolder opens PR → apps/name/inference-service.yaml"]
+        GH["GitHub PR + CI\nkubeconform schema validation\nKyverno policy simulation\nresource-delta comment\nBlocked on label / resource / tag violations"]
+        ARGO["ArgoCD\nRoot app-of-apps: bootstrap/root-app.yaml\nApplicationSet: auto-discovers apps/*\nSelf-heals drift in ~3 min"]
+        KYV["Kyverno (Admission Control)\nBlocks: no owner/cost-center labels\nBlocks: no CPU/memory limits\nBlocks: :latest image tags\nBlocks: root containers"]
+        NS["Namespace Governance\nResourceQuota: CPU · memory · pod count\nLimitRange: per-container defaults"]
+        OC["OpenCost\nReads owner/cost-center labels from Prometheus\nPer-team cost breakdowns · localhost:9090"]
+        Dev --> BS --> GH --> ARGO --> KYV
+        KYV --> NS
+        KYV --> OC
+    end
+    subgraph DP["🔶 DATA PLANE"]
+        direction TB
+        KSC["KServe Controller\nWatches InferenceService CRD\nCreates Knative Service + Revision + Route"]
+        KN["Knative Serving\nManages predictor pod lifecycle\nRoutes traffic by Host header via Kourier"]
+        KOU["Kourier — Ingress Gateway\nLightweight Envoy-based · port 80"]
+        POD["Predictor Pod\nClusterServingRuntime (sklearn-runtime.yaml)\n/v1/models/name:predict"]
+        KSC --> KN --> KOU --> POD
+    end
+    KYV -->|"admitted ✅"| KSC
 ```
 
 ---
@@ -180,23 +143,15 @@ GitOps in NeuroScale is implemented with **ArgoCD app-of-apps + ApplicationSet**
 
 **Trigger chain (new model deployment):**
 
-```
-Developer merges PR containing apps/<name>/inference-service.yaml
-       |
-       v
-ArgoCD neuroscale-model-endpoints ApplicationSet polls apps/
-       |
-       +-> Detects new <name>/ directory
-       |         |
-       |         v
-       |   Creates child Application object in-cluster automatically
-       |         |
-       |         v
-       |   Child app syncs apps/<name>/inference-service.yaml
-       |
-       +-> Self-heal loop: every ~3 minutes, desired state in Git
-            is compared to live state in cluster.
-            Any manual drift (kubectl delete, kubectl edit) is reverted.
+```mermaid
+flowchart TD
+    MERGE["Developer merges PR\ncontaining apps/name/inference-service.yaml"]
+    POLL["ArgoCD neuroscale-model-endpoints\nApplicationSet polls apps/"]
+    DETECT["Detects new name/ directory"]
+    CREATE["Creates child Application object\nin-cluster automatically"]
+    SYNC["Child app syncs\napps/name/inference-service.yaml\nto cluster"]
+    HEAL["Self-heal loop: every ~3 minutes\ndesired state in Git vs live state\nManual drift (kubectl delete/edit) auto-reverted"]
+    MERGE --> POLL --> DETECT --> CREATE --> SYNC --> HEAL
 ```
 
 **Key design decision — why ApplicationSet instead of per-app Application files:**
@@ -224,27 +179,16 @@ Backstage serves two functions in NeuroScale:
 
 **b) Golden Path Scaffolder** — the `KServe model endpoint` template at `backstage/templates/model-endpoint/template.yaml` generates the file required by the GitOps pipeline:
 
-```
-User fills form in Backstage
-        |
-        v
-Scaffolder publishes PR to GitHub containing:
-  apps/<name>/inference-service.yaml          <- KServe manifest, labels, resources
-        |
-        v
-CI runs on the PR (kubeconform + Kyverno simulation + resource-delta comment)
-        |
-        v
-Human reviews and merges PR
-        |
-        v
-ArgoCD ApplicationSet detects new apps/<name>/ folder
-        |
-        v
-ApplicationSet creates child Application automatically
-        |
-        v
-InferenceService becomes Ready; OpenCost begins attributing cost to owner/team
+```mermaid
+flowchart TD
+    FORM["User fills form in Backstage"]
+    PR["Scaffolder publishes PR to GitHub\napps/name/inference-service.yaml\n(KServe manifest · required labels · resource limits)"]
+    CI["CI runs on the PR\nkubeconform · Kyverno simulation · resource-delta comment"]
+    REVIEW["Human reviews and merges PR"]
+    APPSET["ArgoCD ApplicationSet\ndetects new apps/name/ folder"]
+    CHILD["ApplicationSet creates\nchild Application automatically"]
+    READY["InferenceService becomes Ready\nOpenCost begins attributing cost\nto owner / team"]
+    FORM --> PR --> CI --> REVIEW --> APPSET --> CHILD --> READY
 ```
 
 **The critical non-obvious piece:** Backstage is *not* the deployment engine. It is the UX that generates Git artifacts. ArgoCD is the deployment engine. This separation means Backstage can be down without affecting running inference endpoints.
@@ -253,20 +197,14 @@ InferenceService becomes Ready; OpenCost begins attributing cost to owner/team
 
 KServe operates in **serverless mode** (Knative-based) in this platform. The request path for a deployed `InferenceService` named `demo-iris-2` is:
 
-```
-curl (with Host header)
-       |
-       v
-Kourier (svc/kourier in namespace kourier-system, port 80)
-       |  routes by Host: demo-iris-2-predictor.default.<domain>
-       v
-Knative Route -> Knative Revision
-       |
-       v
-Predictor Pod (running sklearn-runtime image)
-       |  port 8080
-       v
-/v1/models/demo-iris-2:predict -> {"predictions":[1,1]}
+```mermaid
+flowchart TD
+    CURL["curl request\n(with Host header)"]
+    KOURIER["Kourier\nsvc/kourier · kourier-system · port 80"]
+    KN["Knative Route → Knative Revision\nroutes by Host: name-predictor.default.domain"]
+    POD["Predictor Pod\nsklearn-runtime image · port 8080"]
+    RESP["Response\n/v1/models/demo-iris-2:predict\n→ {\"predictions\":[1,1]}"]
+    CURL --> KOURIER --> KN --> POD --> RESP
 ```
 
 **Why Kourier instead of Istio:** The cluster runs on local k3d with constrained RAM. Istio adds ~1 GB memory overhead. Kourier is a minimal Envoy-based gateway that Knative supports natively and costs ~100 MB. The ingress config patch at `infrastructure/serving-stack/patches/inferenceservice-config-ingress.yaml` sets `disableIstioVirtualHost: true` to signal this choice to KServe.
@@ -337,12 +275,12 @@ neuroscale-platform/
 |   +-- guardrails-checks.yaml           # CI: kubeconform + Kyverno simulation + cost proxy
 |
 |-- docs/
+|   |-- archive/
+|   |   |-- MILESTONE_A_POSTMORTEM.md           # GitOps spine: incidents + design decisions
+|   |   |-- MILESTONE_B_POSTMORTEM.md           # KServe: incidents + design decisions
+|   |   +-- MILESTONE_C_POSTMORTEM.md           # Golden Path: contract, incidents, runbook
 |   |-- PROJECT_MEMORY.md
-|   |-- LEARNING_STRATEGY_AGREEMENT.md
-|   |-- WEEK_1_LEARNING_REVIEW.md
-|   |-- WEEK_2_LEARNING_REVIEW.md
-|   |-- WEEK_3_GOLDEN_PATH_CONTRACT.md
-|   |-- HANDOFF_PROMPT.md
+|   |-- CLOUD_PROMOTION_GUIDE.md            # Phase-by-phase EKS/GKE promotion guide
 |   |-- REALITY_CHECK_MILESTONE_1_GITOPS_SPINE.md
 |   |-- REALITY_CHECK_MILESTONE_2_KSERVE_SERVING.md
 |   |-- REALITY_CHECK_MILESTONE_3_GOLDEN_PATH.md
@@ -350,7 +288,6 @@ neuroscale-platform/
 |   |-- REALITY_CHECK_MILESTONE_5_COST_PROXY.md
 |   +-- REALITY_CHECK_MILESTONE_6_PRODUCTION_HARDENING.md
 |
-|-- plan-neuroScale.prompt.md
 +-- README.md
 ```
 
@@ -561,7 +498,7 @@ Full incident postmortem for the Backstage CrashLoopBackOff: [infrastructure/INC
 
 ## 9. Operational Runbook: ArgoCD Sync Recovery, KServe Restart, and Backstage Token Refresh
 
-See `docs/WEEK_3_GOLDEN_PATH_CONTRACT.md` for the full runbook.
+See `docs/archive/MILESTONE_C_POSTMORTEM.md` for the full runbook.
 
 **Common recovery commands:**
 
@@ -588,7 +525,7 @@ kubectl -n backstage rollout restart deploy/neuroscale-backstage
 
 ---
 
-## 10. Interview Defense: Mapping Platform Decisions to Production Engineering Signals
+## 10. Platform Architecture: Key Design Decisions and Where They Live
 
 | Question | Where to Point |
 |----------|---------------|
