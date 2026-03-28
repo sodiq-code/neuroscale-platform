@@ -60,7 +60,7 @@ $ bash scripts/smoke-test.sh
 7. [Reality Check Documentation](#7-reality-check-documentation)
 8. [Guardrails: What Gets Blocked and Why](#8-guardrails-what-gets-blocked-and-why)
 9. [Operational Runbook: ArgoCD Sync Recovery, KServe Restart, and Backstage Token Refresh](#9-operational-runbook-argocd-sync-recovery-kserve-restart-and-backstage-token-refresh)
-10. [Interview Defense: Mapping Platform Decisions to Production Engineering Signals](#10-interview-defense-mapping-platform-decisions-to-production-engineering-signals)
+10. [Platform Architecture: Key Design Decisions and Where They Live](#10-platform-architecture-key-design-decisions-and-where-they-live)
 
 ---
 
@@ -103,6 +103,34 @@ flowchart TD
     KYV --> KYBLOCK
     KYV -->|"5. admitted ✅"| KS
     KS -->|"6. owner + cost-center labels\n→ Prometheus → per-team costs"| OC
+```
+
+### Mermaid detail: Control Plane and Data Plane
+
+```mermaid
+flowchart TB
+    subgraph CP["🔷 CONTROL PLANE"]
+        direction TB
+        Dev["Developer"]
+        BS["Backstage — Golden Path UI\nTemplate form: name · modelFormat · storageUri\nScaffolder opens PR → apps/name/inference-service.yaml"]
+        GH["GitHub PR + CI\nkubeconform schema validation\nKyverno policy simulation\nresource-delta comment\nBlocked on label / resource / tag violations"]
+        ARGO["ArgoCD\nRoot app-of-apps: bootstrap/root-app.yaml\nApplicationSet: auto-discovers apps/*\nSelf-heals drift in ~3 min"]
+        KYV["Kyverno (Admission Control)\nBlocks: no owner/cost-center labels\nBlocks: no CPU/memory limits\nBlocks: :latest image tags\nBlocks: root containers"]
+        NS["Namespace Governance\nResourceQuota: CPU · memory · pod count\nLimitRange: per-container defaults"]
+        OC["OpenCost\nReads owner/cost-center labels from Prometheus\nPer-team cost breakdowns · localhost:9090"]
+        Dev --> BS --> GH --> ARGO --> KYV
+        KYV --> NS
+        KYV --> OC
+    end
+    subgraph DP["🔶 DATA PLANE"]
+        direction TB
+        KSC["KServe Controller\nWatches InferenceService CRD\nCreates Knative Service + Revision + Route"]
+        KN["Knative Serving\nManages predictor pod lifecycle\nRoutes traffic by Host header via Kourier"]
+        KOU["Kourier — Ingress Gateway\nLightweight Envoy-based · port 80"]
+        POD["Predictor Pod\nClusterServingRuntime (sklearn-runtime.yaml)\n/v1/models/name:predict"]
+        KSC --> KN --> KOU --> POD
+    end
+    KYV -->|"admitted ✅"| KSC
 ```
 
 ### ASCII detail: Control Plane and Data Plane
@@ -180,6 +208,17 @@ GitOps in NeuroScale is implemented with **ArgoCD app-of-apps + ApplicationSet**
 
 **Trigger chain (new model deployment):**
 
+```mermaid
+flowchart TD
+    MERGE["Developer merges PR\ncontaining apps/name/inference-service.yaml"]
+    POLL["ArgoCD neuroscale-model-endpoints\nApplicationSet polls apps/"]
+    DETECT["Detects new name/ directory"]
+    CREATE["Creates child Application object\nin-cluster automatically"]
+    SYNC["Child app syncs\napps/name/inference-service.yaml\nto cluster"]
+    HEAL["Self-heal loop: every ~3 minutes\ndesired state in Git vs live state\nManual drift (kubectl delete/edit) auto-reverted"]
+    MERGE --> POLL --> DETECT --> CREATE --> SYNC --> HEAL
+```
+
 ```
 Developer merges PR containing apps/<name>/inference-service.yaml
        |
@@ -224,6 +263,18 @@ Backstage serves two functions in NeuroScale:
 
 **b) Golden Path Scaffolder** — the `KServe model endpoint` template at `backstage/templates/model-endpoint/template.yaml` generates the file required by the GitOps pipeline:
 
+```mermaid
+flowchart TD
+    FORM["User fills form in Backstage"]
+    PR["Scaffolder publishes PR to GitHub\napps/name/inference-service.yaml\n(KServe manifest · required labels · resource limits)"]
+    CI["CI runs on the PR\nkubeconform · Kyverno simulation · resource-delta comment"]
+    REVIEW["Human reviews and merges PR"]
+    APPSET["ArgoCD ApplicationSet\ndetects new apps/name/ folder"]
+    CHILD["ApplicationSet creates\nchild Application automatically"]
+    READY["InferenceService becomes Ready\nOpenCost begins attributing cost\nto owner / team"]
+    FORM --> PR --> CI --> REVIEW --> APPSET --> CHILD --> READY
+```
+
 ```
 User fills form in Backstage
         |
@@ -252,6 +303,16 @@ InferenceService becomes Ready; OpenCost begins attributing cost to owner/team
 ### 3.3 KServe: How Inference Is Handled
 
 KServe operates in **serverless mode** (Knative-based) in this platform. The request path for a deployed `InferenceService` named `demo-iris-2` is:
+
+```mermaid
+flowchart TD
+    CURL["curl request\n(with Host header)"]
+    KOURIER["Kourier\nsvc/kourier · kourier-system · port 80"]
+    KN["Knative Route → Knative Revision\nroutes by Host: name-predictor.default.domain"]
+    POD["Predictor Pod\nsklearn-runtime image · port 8080"]
+    RESP["Response\n/v1/models/demo-iris-2:predict\n→ {\"predictions\":[1,1]}"]
+    CURL --> KOURIER --> KN --> POD --> RESP
+```
 
 ```
 curl (with Host header)
@@ -338,11 +399,10 @@ neuroscale-platform/
 |
 |-- docs/
 |   |-- PROJECT_MEMORY.md
-|   |-- LEARNING_STRATEGY_AGREEMENT.md
-|   |-- WEEK_1_LEARNING_REVIEW.md
-|   |-- WEEK_2_LEARNING_REVIEW.md
-|   |-- WEEK_3_GOLDEN_PATH_CONTRACT.md
-|   |-- HANDOFF_PROMPT.md
+|   |-- CLOUD_PROMOTION_GUIDE.md            # Phase-by-phase EKS/GKE promotion guide
+|   |-- MILESTONE_A_POSTMORTEM.md           # GitOps spine: incidents + design decisions
+|   |-- MILESTONE_B_POSTMORTEM.md           # KServe: incidents + design decisions
+|   |-- WEEK_3_GOLDEN_PATH_CONTRACT.md      # Operational runbook + defense drills
 |   |-- REALITY_CHECK_MILESTONE_1_GITOPS_SPINE.md
 |   |-- REALITY_CHECK_MILESTONE_2_KSERVE_SERVING.md
 |   |-- REALITY_CHECK_MILESTONE_3_GOLDEN_PATH.md
@@ -350,7 +410,6 @@ neuroscale-platform/
 |   |-- REALITY_CHECK_MILESTONE_5_COST_PROXY.md
 |   +-- REALITY_CHECK_MILESTONE_6_PRODUCTION_HARDENING.md
 |
-|-- plan-neuroScale.prompt.md
 +-- README.md
 ```
 
@@ -588,7 +647,7 @@ kubectl -n backstage rollout restart deploy/neuroscale-backstage
 
 ---
 
-## 10. Interview Defense: Mapping Platform Decisions to Production Engineering Signals
+## 10. Platform Architecture: Key Design Decisions and Where They Live
 
 | Question | Where to Point |
 |----------|---------------|
