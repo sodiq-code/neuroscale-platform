@@ -1,0 +1,104 @@
+# Backstage values — PRODUCTION profile
+#
+# Key differences from values.yaml (dev):
+#   - replicas: 2 (HA; not single-point-of-failure)
+#   - resources: hard CPU/memory limits set (Kyverno policy requires them)
+#   - auth: no dangerouslyAllowOutsideDevelopment; real GitHub OAuth required
+#   - probes: tighter thresholds (startup failure = real outage in prod)
+#   - revisionHistoryLimit: 5 (more rollback points)
+#
+# Usage with ArgoCD:
+#   In the backstage Application spec set:
+#     helm:
+#       valueFiles:
+#         - values-prod.yaml
+# ---------------------------------------------------------------------------
+backstage:
+  postgresql:
+    enabled: true
+
+  backstage:
+    replicas: 2
+    revisionHistoryLimit: 5
+
+    image:
+      repository: backstage/backstage
+      digest: "sha256:d20016b0455c3d359461be69d85c8b672f0f7ad19d41b773bf4a315ec911ca3c"
+      pullPolicy: IfNotPresent
+
+    extraEnvVars:
+      - name: GITHUB_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: neuroscale-backstage-secrets
+            key: GITHUB_TOKEN
+            optional: false  # Required in production; fail-fast if missing
+      - name: AUTH_GITHUB_CLIENT_ID
+        valueFrom:
+          secretKeyRef:
+            name: neuroscale-backstage-secrets
+            key: AUTH_GITHUB_CLIENT_ID
+      - name: AUTH_GITHUB_CLIENT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: neuroscale-backstage-secrets
+            key: AUTH_GITHUB_CLIENT_SECRET
+
+    appConfig:
+      app:
+        title: NeuroScale Platform
+        baseUrl: https://backstage.neuroscale.internal  # Replace with real ingress URL
+      backend:
+        baseUrl: https://backstage.neuroscale.internal
+        # No dangerouslyDisableDefaultAuthPolicy — auth is enforced in production
+        listen:
+          port: 7007
+          host: "0.0.0.0"
+
+      integrations:
+        github:
+          - host: github.com
+            token: ${GITHUB_TOKEN}
+
+      auth:
+        environment: production
+        providers:
+          github:
+            production:
+              clientId: ${AUTH_GITHUB_CLIENT_ID}
+              clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
+
+      catalog:
+        locations:
+          - type: url
+            target: https://github.com/sodiq-code/neuroscale-platform/blob/main/backstage/templates/model-endpoint/template.yaml
+            rules:
+              - allow: [Template]
+
+      scaffolder:
+        defaultCommitMessage: "chore(scaffolder): apply template"
+
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+
+    # Tighter probes for production — fail fast, recover fast
+    startupProbe:
+      initialDelaySeconds: 60
+      timeoutSeconds: 10
+      periodSeconds: 10
+      failureThreshold: 18  # 3 minutes total startup budget
+    livenessProbe:
+      initialDelaySeconds: 0
+      timeoutSeconds: 10
+      periodSeconds: 30
+      failureThreshold: 3
+    readinessProbe:
+      initialDelaySeconds: 0
+      timeoutSeconds: 10
+      periodSeconds: 15
+      failureThreshold: 3

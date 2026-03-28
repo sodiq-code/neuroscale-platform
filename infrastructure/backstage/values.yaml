@@ -25,8 +25,6 @@ backstage:
         baseUrl: http://localhost:7010
       backend:
         baseUrl: http://localhost:7010
-        auth:
-          dangerouslyDisableDefaultAuthPolicy: true
         listen:
           port: 7007
           host: "0.0.0.0"
@@ -35,6 +33,16 @@ backstage:
         github:
           - host: github.com
             token: ${GITHUB_TOKEN}
+
+      # Guest auth provider — replaces dangerouslyDisableDefaultAuthPolicy.
+      # dangerouslyAllowOutsideDevelopment permits guest login in any
+      # environment (including k3d), while still initialising the auth
+      # subsystem properly so plugins receive a real user identity.
+      # For production, swap for a GitHub OAuth provider (see values-prod.yaml).
+      auth:
+        providers:
+          guest:
+            dangerouslyAllowOutsideDevelopment: true
 
       catalog:
         locations:

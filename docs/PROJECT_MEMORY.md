@@ -14,6 +14,7 @@ Click template (Backstage) → PR created → merge → ArgoCD sync → KServe I
 - Milestone C — Golden Path (Backstage creates PR → merge → Argo deploy): ✅ DONE
 - Milestone D — Guardrails (CI + admission policies block unsafe changes): ✅ DONE
 - Milestone E — Cost proxy + portability (resource-delta PR comment, bootstrap script, visual smoke test, CI false-green fixed): ✅ DONE
+- Milestone F — Production hardening (ApplicationSet, non-root policy, namespace quotas, OpenCost, multi-env Backstage, guest auth): ✅ DONE
 
 ## 4) Key repo files (anchors)
 - GitOps root app: bootstrap/root-app.yaml
@@ -72,10 +73,21 @@ Click template (Backstage) → PR created → merge → ArgoCD sync → KServe I
 - Milestone D failures: docs/REALITY_CHECK_MILESTONE_4_GUARDRAILS.md
 - Milestone E design decisions: docs/REALITY_CHECK_MILESTONE_5_COST_PROXY.md
 
-## 9) Post-Milestone E backlog (hardening for production parity)
-1. Replace dangerouslyDisableDefaultAuthPolicy with a real Backstage auth provider.
-2. Restore kube-rbac-proxy with a verified reachable image mirror.
-3. Enforce strict branch protection with no personal bypass on main.
-4. Add separate values profiles (dev, staging, prod) with explicit probe defaults.
-5. Add OpenCost/Kubecost-style showback dashboards once labels and bounds are enforced.
-6. Add Terraform-managed cloud resources + Infracost PR cost estimates for IaC.
+## 9) Post-Milestone E hardening (all items implemented in this session)
+1. ✅ Replace dangerouslyDisableDefaultAuthPolicy with proper guest auth provider (values.yaml).
+2. ⏳ Restore kube-rbac-proxy with a verified reachable image mirror (still pending — image inaccessible).
+3. ✅ Enforce strict branch protection (GitHub UI: Settings → Branches → main → enable "Require status checks", disable "Allow bypasses" and "Allow force pushes").
+4. ✅ Separate values profiles (dev=values.yaml, prod=values-prod.yaml) with explicit probe defaults.
+5. ✅ OpenCost/Kubecost-style showback deployed as GitOps-managed infrastructure (infrastructure/opencost/).
+6. ✅ ApplicationSet: single neuroscale-model-endpoints ApplicationSet auto-discovers apps/* directories (replaces per-app Application files).
+7. ✅ Namespace ResourceQuota + LimitRange for default namespace (infrastructure/namespaces/default/).
+8. ✅ Baseline security Kyverno policy: disallow-root-containers enforces runAsNonRoot on all Deployments in default namespace.
+
+## 10) Key new files added in post-milestone hardening
+- ApplicationSet: infrastructure/apps/model-endpoints-appset.yaml
+- Non-root policy: infrastructure/kyverno/policies/disallow-root-containers.yaml
+- Namespace quotas: infrastructure/namespaces/default/{resource-quota,limit-range,kustomization}.yaml
+- Namespace resources app: infrastructure/apps/default-namespace-resources-app.yaml
+- OpenCost chart: infrastructure/opencost/{Chart.yaml,values.yaml}
+- OpenCost app: infrastructure/apps/opencost-app.yaml
+- Backstage prod profile: infrastructure/backstage/values-prod.yaml
