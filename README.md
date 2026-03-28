@@ -204,7 +204,7 @@ flowchart TD
     KOURIER["Kourier\nsvc/kourier · kourier-system · port 80"]
     KN["Knative Route → Knative Revision\nroutes by Host: name-predictor.default.domain"]
     POD["Predictor Pod\nsklearn-runtime image · port 8080"]
-    RESP["Response\n/v1/models/demo-iris-2:predict\n→ {\"predictions\":[1,1]}"]
+    RESP["Response\n/v1/models/demo-iris-2:predict\n→ predictions:[1,1]"]
     CURL --> KOURIER --> KN --> POD --> RESP
 ```
 
