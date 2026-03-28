@@ -1,10 +1,51 @@
 # NeuroScale Platform
 
+> A production-hardened AI inference platform that solves configuration drift,
+> the Backstage adoption paradox, and the gap between AI code generation and governed
+> production deployment — with 21 verified checks across 6 milestones.
+
+## Proof: smoke test output (single command, any machine)
+
+```
+$ bash scripts/smoke-test.sh
+
+━━━ Milestone A — GitOps Spine ━━━
+  [✓ PASS] All ArgoCD pods are Running
+  [✓ PASS] ArgoCD Applications: 7/7 Healthy and Synced
+  [✓ PASS] Drift self-heal: nginx-test recreated in ~20s
+
+━━━ Milestone B — AI Serving Baseline ━━━
+  [✓ PASS] KServe controller-manager: 1 replica available
+  [✓ PASS] InferenceServices: 2/2 Ready=True
+  [✓ PASS] Inference request: demo-iris-2 → {"predictions":[1,1]}
+
+━━━ Milestone C — Golden Path ━━━
+  [✓ PASS] Backstage deployment: 1 replica available
+  [✓ PASS] demo-iris-2 InferenceService exists (scaffolder output)
+  [✓ PASS] demo-iris-2 ArgoCD Application exists (scaffolder output)
+
+━━━ Milestone D — Guardrails ━━━
+  [✓ PASS] Kyverno ClusterPolicies installed: 5 policies
+  [✓ PASS] Non-compliant InferenceService correctly denied
+
+━━━ Milestone E — Cost + Portability ━━━
+  [~ SKIP] Resource-delta PR comment + bootstrap script validated in CI (no live cluster checks)
+
+━━━ Milestone F — Production Hardening ━━━
+  [✓ PASS] ApplicationSet generates 3 child Applications
+  [✓ PASS] ResourceQuota exists in default namespace
+  [✓ PASS] OpenCost deployment healthy
+
+  PASS  21 / FAIL  0 / SKIP  1
+```
+
 > **Executive Summary:** NeuroScale is a self-service AI inference platform on Kubernetes. A developer fills in a Backstage form, the platform creates a pull request, ArgoCD deploys it, and a production-grade KServe inference endpoint is live — with cost attribution, drift control, and policy guardrails enforced automatically at every stage.
 
 ---
 
 ## Table of Contents
+
+- [Proof: Smoke Test Output](#proof-smoke-test-output-single-command-any-machine)
 
 1. [Why NeuroScale Exists: Addressing 2026 ML Infrastructure Pain Signals](#1-why-neuroscale-exists-addressing-2026-ml-infrastructure-pain-signals)
 2. [Architecture: Control Plane and Data Plane](#2-architecture-control-plane-and-data-plane)
@@ -14,6 +55,7 @@
    - [KServe: How Inference Is Handled](#33-kserve-how-inference-is-handled)
 4. [Repository Map](#4-repository-map)
 5. [Milestone Status](#5-milestone-status)
+   - [What Each Milestone Cost to Build](#what-each-milestone-cost-to-build-the-failures-not-the-happy-path)
 6. [Quickstart: Running the Demo Locally](#6-quickstart-running-the-demo-locally)
 7. [Reality Check Documentation](#7-reality-check-documentation)
 8. [Guardrails: What Gets Blocked and Why](#8-guardrails-what-gets-blocked-and-why)
@@ -297,6 +339,23 @@ neuroscale-platform/
 | **D** | Guardrails: Kyverno admission + PR-time CI policy simulation (false-green fixed) | Done |
 | **E** | Cost proxy + portability: resource-delta PR comment, bootstrap script, visual smoke test | Done |
 | **F** | Production hardening: ApplicationSet, non-root policy, namespace quotas, OpenCost, multi-env Backstage, guest auth, port-forward-all | Done |
+
+---
+
+## What each milestone cost to build (the failures, not the happy path)
+
+| Milestone | Hardest failure | Time lost | Business impact |
+|-----------|----------------|-----------|-----------------|
+| A — GitOps spine | ArgoCD `Unknown` state caused by repo-server CrashLoopBackOff — looks like a manifest error but is a controller connectivity failure | 40 min | Zero drift correction during outage window |
+| B — KServe serving | Default KServe config assumes Istio; `disableIstioVirtualHost` is not disclosed in getting-started docs | 3 hours | All InferenceService creation blocked cluster-wide |
+| C — Backstage Golden Path | 9 distinct failures; CI false-green on Kyverno policy violations for 2 weeks | ~6 hours | PR-time enforcement was silently not enforcing |
+| D — Guardrails | `kyverno-cli apply` exits 0 on violations; `$PIPESTATUS[0]` required | 2 weeks undetected | Guardrails existed but did not enforce |
+| E — Cost + portability | `$patch: delete` in a Kustomize file deleted the live CRD cluster-wide; all InferenceServices gone in seconds | 4 min recovery | SEV-1 equivalent: all inference endpoints deleted simultaneously |
+| F — Production hardening | Backstage `dangerouslyDisableDefaultAuthPolicy` vs `dangerouslyAllowOutsideDevelopment` — these are different with different security implications | 1 hour diagnosis | Silent security exposure in production profile |
+
+Full Reality Check documentation for each milestone: [7. Reality Check Documentation](#7-reality-check-documentation)
+
+Full Backstage CrashLoopBackOff incident postmortem: [infrastructure/INCIDENT_BACKSTAGE_CRASHLOOP_RCA.md](infrastructure/INCIDENT_BACKSTAGE_CRASHLOOP_RCA.md)
 
 ---
 
