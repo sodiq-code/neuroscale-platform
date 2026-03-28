@@ -32,5 +32,3 @@ grep -q "startupProbe:" "${OUT_FILE}"
 grep -q "initialDelaySeconds: 120" "${OUT_FILE}"
 
 echo "Rendered Backstage chart to: ${OUT_FILE}"
-
-echo "Rendered Backstage chart to: ${OUT_FILE}"
