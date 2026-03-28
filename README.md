@@ -61,6 +61,7 @@ $ bash scripts/smoke-test.sh
 8. [Guardrails: What Gets Blocked and Why](#8-guardrails-what-gets-blocked-and-why)
 9. [Operational Runbook: ArgoCD Sync Recovery, KServe Restart, and Backstage Token Refresh](#9-operational-runbook-argocd-sync-recovery-kserve-restart-and-backstage-token-refresh)
 10. [Platform Architecture: Key Design Decisions and Where They Live](#10-platform-architecture-key-design-decisions-and-where-they-live)
+11. [GitHub Topics & Repository Discoverability](#11-github-topics-repository-discoverability)
 
 ---
 
