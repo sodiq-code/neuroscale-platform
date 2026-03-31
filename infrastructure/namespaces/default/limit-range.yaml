@@ -16,5 +16,5 @@ spec:
         cpu: "2"
         memory: 4Gi
       min:
-        cpu: 50m
+        cpu: 25m
         memory: 64Mi
