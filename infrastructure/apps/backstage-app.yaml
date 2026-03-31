@@ -8,19 +8,16 @@ spec:
   source:
     repoURL: https://github.com/sodiq-code/neuroscale-platform.git
     targetRevision: main
+    # This tells the child app to read the Helm blueprint we made earlier
     path: infrastructure/backstage
-    helm:
-      # Explicit values file — dev profile (local k3d).
-      # For production, switch to values-prod.yaml which enables GitHub OAuth
-      # and removes dangerouslyAllowOutsideDevelopment.
-      valueFiles:
-        - values.yaml
   destination:
     server: https://kubernetes.default.svc
+    # We are putting Backstage in its own clean neighborhood
     namespace: backstage
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
+      # This tells ArgoCD to automatically create the "backstage" namespace
       - CreateNamespace=true

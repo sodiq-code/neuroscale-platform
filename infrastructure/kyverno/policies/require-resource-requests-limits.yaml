@@ -15,17 +15,6 @@ spec:
                 - Deployment
               namespaces:
                 - default
-      exclude:
-        any:
-          - resources:
-              kinds:
-                - Deployment
-              namespaces:
-                - default
-              selector:
-                matchExpressions:
-                  - key: serving.kserve.io/inferenceservice
-                    operator: Exists
       skipBackgroundRequests: true
       validate:
         message: "Deployment containers must define cpu/memory requests and limits."

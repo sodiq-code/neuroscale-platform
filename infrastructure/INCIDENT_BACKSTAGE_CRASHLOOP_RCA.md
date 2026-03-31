@@ -9,13 +9,13 @@
 
 ---
 
-## 1) Executive Summary: Helm Dependency Values Mis-Nesting Causes CrashLoopBackOff Due to Aggressive Default Probe Timings
+## 1) Executive Summary
 
 Backstage repeatedly restarted with `CrashLoopBackOff` after deployment changes. PostgreSQL remained healthy. The primary cause was incorrect Helm values hierarchy for a dependency chart, which prevented probe/resource tuning from being applied. Kubernetes then used default probe timings that were too aggressive for Backstage startup. After correcting values nesting and hardening probe/image settings, rollout converged and Backstage stabilized.
 
 ---
 
-## 2) Business Impact: Backstage Developer Portal Unavailable — ArgoCD App Health Degraded During Incident Window
+## 2) Business / Platform Impact
 
 - Backstage UI/API unstable during the incident window.
 - GitOps app health remained in progressing/degraded state during failing rollouts.
@@ -37,9 +37,9 @@ Corroborated by:
 
 ---
 
-## 4) Root Cause Analysis: Backstage Helm Dependency Values Hierarchy Error Silently Ignores Probe and Resource Overrides
+## 4) Root Cause Analysis (RCA)
 
-### Primary Root Cause: Incorrect backstage.backstage.* Values Nesting Causes Kubernetes to Use Default 2s Startup Probe
+### Primary Root Cause
 
 Incorrect values path in parent Helm chart for dependency overrides.
 
@@ -71,7 +71,7 @@ Effect:
 
 ---
 
-## 6) Corrective Actions: Fix backstage.backstage.* Nesting, Harden Startup Probe Thresholds, Pin Image Digest
+## 6) Corrective Actions Implemented
 
 Applied in [infrastructure/backstage/values.yaml](backstage/values.yaml#L1-L43):
 
@@ -124,7 +124,7 @@ This overlap is expected and can look like a persistent failure if only watching
 
 ---
 
-## 9) Preventive Actions: CI helm template Validation, Schema Checks, and Floating Tag Enforcement
+## 9) Preventive Actions (Required)
 
 ### CI/CD Guardrails
 
@@ -145,10 +145,10 @@ This overlap is expected and can look like a persistent failure if only watching
 
 ## 10) Follow-up Tasks
 
-- [x] Add CI validation for rendered manifest probes/resources — implemented via `scripts/ci/render_backstage.sh` + `guardrails-checks.yaml`, which renders the Backstage Helm chart and validates the resulting Deployment spec.
-- [x] Add GitOps runbook section to infrastructure docs — implemented in `docs/MILESTONE_C_POSTMORTEM.md` (Operational Runbook section).
-- [x] Add policy/check preventing dependency mis-nesting regressions — `render_backstage.sh` renders the full chart and captures probe/resource values in CI, catching Helm values nesting errors before merge.
-- [x] Consider separate values profiles (`dev`, `staging`, `prod`) with explicit probe defaults — implemented in Milestone F: `infrastructure/backstage/values.yaml` (dev, guest auth, 1 replica) and `infrastructure/backstage/values-prod.yaml` (prod, GitHub OAuth, 2 replicas) with explicit probe thresholds in both.
+- [ ] Add CI validation for rendered manifest probes/resources.
+- [ ] Add GitOps runbook section to infrastructure docs.
+- [ ] Add policy/check preventing dependency mis-nesting regressions.
+- [ ] Consider separate values profiles (`dev`, `staging`, `prod`) with explicit probe defaults.
 
 ---
 

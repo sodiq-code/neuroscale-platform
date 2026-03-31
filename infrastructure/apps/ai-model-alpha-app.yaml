@@ -1,26 +1,18 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: neuroscale-opencost
+  name: ai-model-alpha
   namespace: argocd
-  annotations:
-    # Deploy after policy guardrails so namespace labels are in place
-    argocd.argoproj.io/sync-wave: "30"
 spec:
   project: default
   source:
     repoURL: https://github.com/sodiq-code/neuroscale-platform.git
     targetRevision: main
-    path: infrastructure/opencost
-    helm:
-      valueFiles:
-        - values.yaml
+    path: apps/ai-model-alpha
   destination:
     server: https://kubernetes.default.svc
-    namespace: opencost
+    namespace: default
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
