@@ -154,7 +154,7 @@ fi
 # InferenceService status
 isvc_total=$(kubectl -n default get inferenceservices --no-headers 2>/dev/null | wc -l || echo "0")
 isvc_ready=$(kubectl -n default get inferenceservices --no-headers 2>/dev/null \
-  | grep -c "True" || echo "0")
+  | awk '$2 == "True" { c++ } END { print c + 0 }')
 
 if [ "${isvc_total}" -gt 0 ]; then
   if [ "${isvc_ready}" -gt 0 ]; then
