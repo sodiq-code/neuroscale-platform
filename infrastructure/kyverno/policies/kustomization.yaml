@@ -6,4 +6,3 @@ resources:
   - require-standard-labels-deployment.yaml
   - require-resource-requests-limits.yaml
   - disallow-latest-image-tag.yaml
-  - disallow-root-containers.yaml

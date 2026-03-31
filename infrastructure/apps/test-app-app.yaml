@@ -1,16 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: neuroscale-default-namespace-resources
+  name: test-app
   namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "5"
 spec:
   project: default
   source:
     repoURL: https://github.com/sodiq-code/neuroscale-platform.git
     targetRevision: main
-    path: infrastructure/namespaces/default
+    path: apps/test-app
   destination:
     server: https://kubernetes.default.svc
     namespace: default
