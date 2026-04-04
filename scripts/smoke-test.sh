@@ -80,11 +80,11 @@ else
 fi
 
 # Applications
-total_apps=$(kubectl -n argocd get applications --no-headers 2>/dev/null | wc -l || echo "0")
+total_apps=$(kubectl -n argocd get applications --no-headers 2>/dev/null | wc -l | tr -d ' \n' || echo "0")
 healthy_apps=$(kubectl -n argocd get applications --no-headers 2>/dev/null \
-  | grep -c "Healthy" || echo "0")
+  | grep -c "Healthy" | tr -d ' \n' || echo "0")
 synced_apps=$(kubectl -n argocd get applications --no-headers 2>/dev/null \
-  | grep -c "Synced" || echo "0")
+  | grep -c "Synced" | tr -d ' \n' || echo "0")
 
 if [ "${total_apps}" -gt 0 ]; then
   if [ "${healthy_apps}" -eq "${total_apps}" ]; then
@@ -152,11 +152,11 @@ else
 fi
 
 # InferenceService status
-isvc_total=$(kubectl -n default get inferenceservices --no-headers 2>/dev/null | wc -l || echo "0")
+isvc_total=$(kubectl -n default get inferenceservices --no-headers 2>/dev/null | wc -l | tr -d ' \n' || echo "0")
 isvc_ready=$(kubectl -n default get inferenceservices --no-headers 2>/dev/null \
-  | grep -c "True" || echo "0")
+  | grep -c "True" | tr -d ' \n' || echo "0")
 
-if [ "${isvc_total}" -gt 0 ]; then
+if [ "${isvc_total:-0}" -gt 0 ]; then
   if [ "${isvc_ready}" -gt 0 ]; then
     pass "InferenceServices: ${isvc_ready}/${isvc_total} Ready=True"
   else
@@ -235,7 +235,7 @@ section "Milestone D — Guardrails (Kyverno + CI)"
 
 # Kyverno pods
 kyverno_running=$(kubectl -n kyverno get pods --no-headers 2>/dev/null \
-  | grep -c "Running" || echo "0")
+  | grep -c "Running" | tr -d ' \n' || echo "0")
 
 if [ "${kyverno_running:-0}" -ge 1 ]; then
   pass "Kyverno pods running: ${kyverno_running}"
@@ -245,7 +245,7 @@ else
 fi
 
 # ClusterPolicies — now 5 after Milestone F added disallow-root-containers
-policy_count=$(kubectl get clusterpolicies --no-headers 2>/dev/null | wc -l || echo "0")
+policy_count=$(kubectl get clusterpolicies --no-headers 2>/dev/null | wc -l | tr -d ' \n' || echo "0")
 if [ "${policy_count:-0}" -ge 5 ]; then
   pass "Kyverno ClusterPolicies installed: ${policy_count} policies"
 elif [ "${policy_count:-0}" -ge 3 ]; then
@@ -295,13 +295,13 @@ section "Milestone F — Production Hardening"
 
 # ApplicationSet
 appset_exists=$(kubectl -n argocd get applicationset neuroscale-model-endpoints \
-  --no-headers 2>/dev/null | wc -l || echo "0")
+  --no-headers 2>/dev/null | wc -l | tr -d ' \n' || echo "0")
 
 if [ "${appset_exists:-0}" -ge 1 ]; then
   pass "ApplicationSet neuroscale-model-endpoints exists"
   # Count generated Applications
   generated_apps=$(kubectl -n argocd get applications --no-headers 2>/dev/null \
-    | grep -c "." || echo "0")
+    | grep -c "." | tr -d ' \n' || echo "0")
   if [ "${generated_apps:-0}" -ge 1 ]; then
     pass "ArgoCD has ${generated_apps} Application(s) (ApplicationSet + static)"
     info "List: kubectl -n argocd get applications"
@@ -315,7 +315,7 @@ fi
 
 # Namespace ResourceQuota
 quota_exists=$(kubectl -n default get resourcequota default-namespace-quota \
-  --no-headers 2>/dev/null | wc -l || echo "0")
+  --no-headers 2>/dev/null | wc -l | tr -d ' \n' || echo "0")
 
 if [ "${quota_exists:-0}" -ge 1 ]; then
   pass "ResourceQuota default-namespace-quota exists in namespace default"
@@ -327,7 +327,7 @@ fi
 
 # LimitRange
 limitrange_exists=$(kubectl -n default get limitrange default-namespace-limits \
-  --no-headers 2>/dev/null | wc -l || echo "0")
+  --no-headers 2>/dev/null | wc -l | tr -d ' \n' || echo "0")
 
 if [ "${limitrange_exists:-0}" -ge 1 ]; then
   pass "LimitRange default-namespace-limits exists in namespace default"

@@ -4,8 +4,8 @@ metadata:
   name: require-standard-labels-deployment
 spec:
   admission: true
-  validationFailureAction: Enforce
   background: true
+  validationFailureAction: Enforce
   rules:
     - name: check-owner-and-cost-center-on-deployment
       match:
@@ -15,6 +15,13 @@ spec:
                 - Deployment
               namespaces:
                 - default
+      exclude:
+        any:
+          # Exclude Knative-generated deployments which are created by the system
+          - resources:
+              selector:
+                matchLabels:
+                  serving.knative.dev/configuration: "?*"
       skipBackgroundRequests: true
       validate:
         message: "Deployment resources must set metadata.labels.owner and metadata.labels.cost-center."
