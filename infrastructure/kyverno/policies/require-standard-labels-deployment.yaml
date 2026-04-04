@@ -20,8 +20,9 @@ spec:
           # Exclude Knative-generated deployments which are created by the system
           - resources:
               selector:
-                matchLabels:
-                  serving.knative.dev/configuration: "?*"
+                matchExpressions:
+                  - key: serving.knative.dev/configuration
+                    operator: Exists
       skipBackgroundRequests: true
       validate:
         message: "Deployment resources must set metadata.labels.owner and metadata.labels.cost-center."

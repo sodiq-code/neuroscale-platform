@@ -76,6 +76,16 @@ The Golden Path scaffolder template previously generated `infrastructure/apps/<n
 
 `infrastructure/namespaces/default/limit-range.yaml` sets per-container defaults that are injected when a container declares no explicit bounds (the LimitRange `default` and `defaultRequest` fields). This means Kyverno's `require-resource-requests-limits` policy and the LimitRange reinforce each other: Kyverno rejects at admission if explicit requests are absent; LimitRange provides fallback bounds for components outside the `default` namespace scope.
 
+### Post-fix note (Apr 2026): minimum CPU floor adjusted for Knative revisions
+
+In local k3d runs, Knative-generated predictor revisions used `cpu: 25m` for a sidecar/utility container while the namespace LimitRange minimum was `50m`. That caused revision admission failures with:
+
+```
+minimum cpu usage per Container is 50m, but request is 25m
+```
+
+The LimitRange minimum was lowered to `10m` (while keeping defaults at `100m` request / `500m` limit). This preserves sane defaults for user workloads but avoids blocking system-generated revision pods.
+
 ### Why the InferenceService count cap matters
 
 KServe creates multiple Kubernetes objects per InferenceService (Pod, Service, Route, Revision). A single InferenceService can indirectly create 5–8 additional objects. Capping InferenceServices at 5 (default namespace) bounds the hidden object proliferation on a small local cluster without blocking legitimate usage for the demo.
@@ -169,9 +179,16 @@ The original test-app used `nginx:1.27.3`. Official NGINX runs as root (uid 0) o
 
 The Service was updated to target port 8080 instead of 80.
 
-### Why InferenceService is not in scope
+### Why Knative/KServe Deployments are explicitly excluded
 
-The `disallow-root-containers` policy matches only `Deployment` objects. KServe predictor pods are created by the KServe controller as `Pod` objects directly, not as `Deployment` objects. Applying the same enforcement to predictor pods requires a separate `Pod`-level policy and is not yet implemented (backlog item). The current policy closes the gap for all operator-managed Deployments.
+The non-root and resource-required policies match `Deployment` objects in `default`. KServe serving on Knative creates predictor `Deployment` resources via Knative Revisions, and those generated Deployments may not satisfy strict platform defaults out-of-the-box on small clusters.
+
+To avoid blocking serving control-plane generated workloads, the Deployment policies now exclude resources labeled with `serving.knative.dev/configuration` (label existence match). This keeps guardrails strict for user-authored Deployments while allowing Knative-generated revision Deployments to reconcile.
+
+The practical outcome is:
+
+- User-authored app Deployments in `default` are still blocked if they run as root or omit requests/limits.
+- Knative-generated predictor Deployments are not blocked by these two Deployment policies.
 
 ---
 
@@ -207,6 +224,12 @@ Each port-forward is attempted independently. If OpenCost is not yet deployed, t
 ---
 
 ## What Milestone 6 Proves
+
+### Post-fix note (Apr 2026): OpenCost smoke detection hardened
+
+The smoke check originally looked for a hardcoded Deployment name and could report a false negative when Helm release naming differed. The check now discovers OpenCost Deployments by label (`app.kubernetes.io/instance=neuroscale-opencost`) and sums available replicas.
+
+This removes naming-coupling and keeps the smoke signal aligned with actual workload health.
 
 ```
 $ bash scripts/smoke-test.sh
