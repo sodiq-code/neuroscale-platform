@@ -15,6 +15,14 @@ spec:
                 - Deployment
               namespaces:
                 - default
+      exclude:
+        any:
+          # Knative/KServe creates these Deployments from Revisions.
+          - resources:
+              selector:
+                matchExpressions:
+                  - key: serving.knative.dev/configuration
+                    operator: Exists
       skipBackgroundRequests: true
       validate:
         message: "Deployment containers must set securityContext.runAsNonRoot: true."
