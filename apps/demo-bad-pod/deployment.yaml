@@ -1,0 +1,29 @@
+# DEMO MANIFEST — intentionally violates Kyverno policies for CI screenshot.
+# Violations:
+#   - disallow-latest-image-tag: image uses `:latest` tag
+#   - require-resource-requests-limits: no resource requests or limits set
+#   - disallow-root-containers: no runAsNonRoot securityContext
+# This file is part of the chore/reproduce-kyverno-bug branch only.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-bad-pod
+  namespace: default
+  labels:
+    owner: platform-team
+    cost-center: cc-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-bad-pod
+  template:
+    metadata:
+      labels:
+        app: demo-bad-pod
+        owner: platform-team
+        cost-center: cc-platform
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
