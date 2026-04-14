@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: screenshot-policy-violation
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: screenshot-policy-violation
+  template:
+    metadata:
+      labels:
+        app: screenshot-policy-violation
+    spec:
+      containers:
+        - name: app
+          image: nginx:1.25.5
+          ports:
+            - containerPort: 80
