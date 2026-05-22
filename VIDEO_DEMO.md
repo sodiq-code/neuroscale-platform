@@ -1,6 +1,8 @@
 # NeuroScale — Video Demo Guide
 
 > **Recommendation:** Record a single-take, unedited terminal video of `bash scripts/smoke-test.sh`. Let the test speak for itself.
+>
+> **Reference recording:** `assets/smoke-test-demo.mp4` — a pre-recorded single-take terminal proof of the full smoke-test run (PASS 21 / FAIL 0).
 
 ---
 
