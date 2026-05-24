@@ -3,7 +3,9 @@ kind: Template
 metadata:
   name: kserve-model-endpoint
   title: KServe model endpoint
-  description: Creates a KServe InferenceService via a pull request. ArgoCD's ApplicationSet auto-discovers the new apps/ folder and deploys it.
+  description: >-
+    Creates a KServe InferenceService via a pull request. ArgoCD's
+    ApplicationSet auto-discovers the new apps/ folder and deploys it.
 spec:
   owner: user:default/guest
   type: service
@@ -65,9 +67,9 @@ spec:
           It adds:
           - apps/${{ parameters.name }}/inference-service.yaml
 
-          The `neuroscale-model-endpoints` ApplicationSet will automatically detect the
-          new `apps/${{ parameters.name }}/` directory and create an ArgoCD Application
-          to deploy the InferenceService.
+          The `neuroscale-model-endpoints` ApplicationSet will automatically
+          detect the new `apps/${{ parameters.name }}/` directory and create an
+          ArgoCD Application to deploy the InferenceService.
         targetBranchName: main
         sourcePath: .
 

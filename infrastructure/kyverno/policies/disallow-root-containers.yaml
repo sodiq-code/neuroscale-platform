@@ -4,8 +4,8 @@ metadata:
   name: disallow-root-containers
 spec:
   admission: true
-  validationFailureAction: Enforce
   background: true
+  validationFailureAction: Enforce
   rules:
     - name: check-runAsNonRoot-on-deployment
       match:
@@ -25,7 +25,8 @@ spec:
                     operator: Exists
       skipBackgroundRequests: true
       validate:
-        message: "Deployment containers must set securityContext.runAsNonRoot: true."
+        message: >-
+          Deployment containers must set securityContext.runAsNonRoot: true.
         pattern:
           spec:
             template:

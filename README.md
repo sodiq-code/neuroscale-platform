@@ -39,6 +39,10 @@ $ bash scripts/smoke-test.sh
   PASS  21 / FAIL  0 / SKIP  1
 ```
 
+### Smoke test demo video
+
+- Single-take terminal demo: [assets/smoke-test-demo.mp4](assets/smoke-test-demo.mp4)
+
 > **Executive Summary:** NeuroScale is a self-service AI inference platform on Kubernetes. A developer fills in a Backstage form, the platform creates a pull request, ArgoCD deploys it, and a production-grade KServe inference endpoint is live — with cost attribution, drift control, and policy guardrails enforced automatically at every stage.
 
 ---
@@ -46,6 +50,7 @@ $ bash scripts/smoke-test.sh
 ## Table of Contents
 
 - [Proof: Smoke Test Output](#proof-smoke-test-output-single-command-any-machine)
+- [Smoke Test Demo Video](#smoke-test-demo-video)
 
 1. [Why NeuroScale Exists: Addressing 2026 ML Infrastructure Pain Signals](#1-why-neuroscale-exists-addressing-2026-ml-infrastructure-pain-signals)
 2. [Architecture: Control Plane and Data Plane](#2-architecture-control-plane-and-data-plane)

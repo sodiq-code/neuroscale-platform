@@ -4,8 +4,8 @@ metadata:
   name: require-resource-requests-limits
 spec:
   admission: true
-  validationFailureAction: Enforce
   background: true
+  validationFailureAction: Enforce
   rules:
     - name: validate-deployment-container-resources
       match:
@@ -25,7 +25,8 @@ spec:
                     operator: Exists
       skipBackgroundRequests: true
       validate:
-        message: "Deployment containers must define cpu/memory requests and limits."
+        message: >-
+          Deployment containers must define cpu/memory requests and limits.
         pattern:
           spec:
             template:

@@ -25,7 +25,9 @@ spec:
                     operator: Exists
       skipBackgroundRequests: true
       validate:
-        message: "Deployment resources must set metadata.labels.owner and metadata.labels.cost-center."
+        message: >-
+          Deployment resources must set metadata.labels.owner and
+          metadata.labels.cost-center.
         pattern:
           metadata:
             labels:

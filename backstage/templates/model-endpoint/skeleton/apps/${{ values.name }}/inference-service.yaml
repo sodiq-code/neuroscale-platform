@@ -4,8 +4,8 @@ metadata:
   name: ${{ values.name }}
   namespace: default
   labels:
-    owner: ${{ values.owner }}
     cost-center: ${{ values.costCenter }}
+    owner: ${{ values.owner }}
 spec:
   predictor:
     model:
