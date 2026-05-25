@@ -555,3 +555,78 @@ kubectl -n backstage rollout restart deploy/neuroscale-backstage
 > **Note:** This repo runs on local k3d (zero-cost, fully reproducible). The cloud promotion path — EKS/GKE Terraform, ingress swap, DNS, TLS, production Backstage — is documented step-by-step in [`docs/CLOUD_PROMOTION_GUIDE.md`](docs/CLOUD_PROMOTION_GUIDE.md). The application manifests require no changes to run on a cloud cluster; only the cluster and network layer changes.
 
 
+
+---
+
+## NeuroScale 2.0 — Autonomous SRE Agent Layer
+
+> **Hackathon extension:** Autonomous incident detection, root-cause analysis, and GitLab MR generation — fully agentic, zero human intervention in the hot path.
+
+### What's New in 2.0
+
+| Feature | Description |
+|---------|-------------|
+| **Watcher Agent** | Polls Arize Phoenix via MCP, detects anomalies in latency / OOM / drift / error rate |
+| **Diagnostician Agent** | RAG-powered root-cause analysis over curated runbook library |
+| **Operator Agent** | Autonomously creates GitLab branch, commits YAML fix, opens MR with Kyverno compliance checklist |
+| **A2A Orchestrator** | Watcher → Diagnostician → Operator pipeline via Google ADK |
+| **HITL Gate** | Human-in-the-loop notification; confidence scoring gates auto-merge |
+
+### Quick Start (Zero Credentials Required)
+
+```bash
+# Install deps
+pip install httpx scikit-learn
+
+# Run full verification suite
+bash scripts/verify-all.sh
+
+# Cinematic 10-beat demo
+bash scripts/demo-run.sh
+
+# Or just the pipeline once
+python3 agents/orchestrator.py --inject
+```
+
+### Architecture
+
+```
+Arize Phoenix ──MCP──▶ Watcher ──▶ Diagnostician ──▶ Operator ──▶ GitLab MR
+                                         ▲
+                                    RAG Runbooks
+```
+
+Full architecture: [`docs/ARCHITECTURE_2_0.md`](docs/ARCHITECTURE_2_0.md)  
+Demo narration: [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md)  
+Submission copy: [`docs/HACKATHON_SUBMISSION.md`](docs/HACKATHON_SUBMISSION.md)  
+Judge's guide: [`docs/JUDGING.md`](docs/JUDGING.md)
+
+### Agent Files
+
+```
+agents/
+├── config.py           # Centralised config (DEMO_MODE=true default)
+├── watcher.py          # Watcher Agent
+├── diagnostician.py    # Diagnostician Agent
+├── operator.py         # Operator Agent
+├── orchestrator.py     # A2A Orchestrator
+├── tools/
+│   ├── arize_mcp.py    # Arize Phoenix MCP client
+│   ├── gitlab_mcp.py   # GitLab MCP client
+│   └── rag_store.py    # RAG / runbook search
+└── demo/
+    ├── inject_failure.sh
+    └── reset_demo.sh
+runbooks/               # RB-001 … RB-009 SRE playbooks
+```
+
+### Production Deployment
+
+```bash
+export ARIZE_API_KEY=...
+export GITLAB_TOKEN=...
+export DEMO_MODE=false
+python3 agents/orchestrator.py --watch --interval 30
+```
+
+K8s manifest: [`infrastructure/agents/deployment.yaml`](infrastructure/agents/deployment.yaml)
