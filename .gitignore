@@ -11,3 +11,38 @@ bash.exe.stackdump
 # OS/editor noise
 .DS_Store
 Thumbs.db
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Internal working docs (not for submission)
+task.md
+BEFORE.md
+AFTER.md
+DEMO_CHEATSHEET.md
+VIDEO_DEMO.md
+
+# Internal milestone docs
+docs/COPILOT_MOMENT_*.md
+docs/REALITY_CHECK_*.md
+docs/CLOUD_PROMOTION_GUIDE.md
+docs/runbook.md
+docs/archive/
+
+# Ops scripts (not submission-relevant)
+scripts/bootstrap.sh
+scripts/port-forward-all.sh
+scripts/smoke-test.sh
+scripts/ci/
+
+# Unused assets
+assets/after-smoketest.png
+assets/before-terminal.png
+assets/ci-guardrails-block.png
+assets/copilot-architecture.png
+assets/hero-before-after.png
+assets/policy-denial.png
+assets/recovery-sequence.png
+assets/smoke-test-demo.mp4
