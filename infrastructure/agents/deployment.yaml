@@ -1,0 +1,222 @@
+---
+# NeuroScale 2.0 — Agent Layer Kubernetes Manifest
+# Deploys Watcher, Diagnostician, and Operator as a single
+# orchestrated pod (sidecar pattern for demo simplicity).
+# In production, split into three separate Deployments.
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: neuroscale-agents
+  labels:
+    app.kubernetes.io/part-of: neuroscale
+    environment: production
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: neuroscale-agent-config
+  namespace: neuroscale-agents
+data:
+  DEMO_MODE: "false"
+  POLL_INTERVAL_SECONDS: "30"
+  LOG_LEVEL: "INFO"
+  RUNBOOK_DIR: "/app/runbooks"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: neuroscale-agent-secrets
+  namespace: neuroscale-agents
+type: Opaque
+stringData:
+  ARIZE_API_KEY: "REPLACE_ME"
+  ARIZE_SPACE_ID: "REPLACE_ME"
+  GITLAB_TOKEN: "REPLACE_ME"
+  GITLAB_PROJECT_ID: "REPLACE_ME"
+  HITL_WEBHOOK_URL: "REPLACE_ME"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neuroscale-orchestrator
+  namespace: neuroscale-agents
+  labels:
+    app: neuroscale-orchestrator
+    version: "2.0"
+    component: agent-layer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: neuroscale-orchestrator
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: neuroscale-orchestrator
+        version: "2.0"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: orchestrator
+          image: gcr.io/neuroscale/orchestrator:2.0
+          imagePullPolicy: Always
+          command:
+            - python3
+            - agents/orchestrator.py
+            - --watch
+            - --interval
+            - "30"
+            - --quiet
+          ports:
+            - containerPort: 8080
+              name: metrics
+          env:
+            - name: DEMO_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: neuroscale-agent-config
+                  key: DEMO_MODE
+            - name: POLL_INTERVAL_SECONDS
+              valueFrom:
+                configMapKeyRef:
+                  name: neuroscale-agent-config
+                  key: POLL_INTERVAL_SECONDS
+            - name: ARIZE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: neuroscale-agent-secrets
+                  key: ARIZE_API_KEY
+            - name: ARIZE_SPACE_ID
+              valueFrom:
+                secretKeyRef:
+                  name: neuroscale-agent-secrets
+                  key: ARIZE_SPACE_ID
+            - name: GITLAB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: neuroscale-agent-secrets
+                  key: GITLAB_TOKEN
+            - name: GITLAB_PROJECT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: neuroscale-agent-secrets
+                  key: GITLAB_PROJECT_ID
+            - name: HITL_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: neuroscale-agent-secrets
+                  key: HITL_WEBHOOK_URL
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          livenessProbe:
+            exec:
+              command:
+                - python3
+                - -c
+                - "import agents.config"
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - python3
+                - -c
+                - "import agents.config"
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: runbooks
+              mountPath: /app/runbooks
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: runbooks
+          configMap:
+            name: neuroscale-runbooks
+        - name: tmp
+          emptyDir: {}
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: neuroscale-orchestrator-pdb
+  namespace: neuroscale-agents
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: neuroscale-orchestrator
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: neuroscale-orchestrator-hpa
+  namespace: neuroscale-agents
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: neuroscale-orchestrator
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neuroscale-orchestrator-svc
+  namespace: neuroscale-agents
+spec:
+  selector:
+    app: neuroscale-orchestrator
+  ports:
+    - name: metrics
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
