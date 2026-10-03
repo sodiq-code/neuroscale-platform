@@ -4,8 +4,8 @@ metadata:
   name: disallow-latest-image-tag
 spec:
   admission: true
-  background: true
   validationFailureAction: Enforce
+  background: true
   rules:
     - name: validate-deployment-container-tags
       match:
@@ -17,8 +17,7 @@ spec:
                 - default
       skipBackgroundRequests: true
       validate:
-        message: >-
-          Deployment container images must use an immutable, non-latest tag.
+        message: "Deployment container images must use an immutable, non-latest tag."
         foreach:
           - list: request.object.spec.template.spec.containers
             deny:
